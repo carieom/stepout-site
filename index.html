@@ -596,7 +596,7 @@ var observer = new IntersectionObserver(function(entries) {
 }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
 document.querySelectorAll('.fade-in').forEach(function(el) { observer.observe(el); });
 
-// Submit to Buttondown using fetch with no-cors mode
+// Submit to Buttondown via a small popup window (Cloudflare needs a real browser window)
 function subscribe(emailId, formId, successId, noteId) {
   var emailInput = document.getElementById(emailId);
   var email = emailInput.value.trim();
@@ -612,31 +612,32 @@ function subscribe(emailId, formId, successId, noteId) {
   btn.disabled = true;
   btn.style.opacity = '0.7';
 
-  // Send to Buttondown using no-cors (sends the data, ignores the response)
-  var formData = new FormData();
-  formData.append('email', email);
+  // Create a temporary form that submits to a popup window
+  var popup = window.open('about:blank', 'bd_popup', 'width=1,height=1,left=-100,top=-100');
+  var tempForm = document.createElement('form');
+  tempForm.method = 'POST';
+  tempForm.action = 'https://buttondown.com/api/emails/embed-subscribe/stepout';
+  tempForm.target = 'bd_popup';
+  tempForm.setAttribute('referrerpolicy', 'unsafe-url');
+  tempForm.style.display = 'none';
+  var input = document.createElement('input');
+  input.name = 'email';
+  input.value = email;
+  tempForm.appendChild(input);
+  document.body.appendChild(tempForm);
+  tempForm.submit();
+  document.body.removeChild(tempForm);
 
-  fetch('https://buttondown.com/api/emails/embed-subscribe/stepout', {
-    method: 'POST',
-    mode: 'no-cors',
-    body: formData
-  }).then(function() {
-    // Show success
+  // Close popup after a few seconds and show success
+  setTimeout(function() {
+    try { if (popup) popup.close(); } catch(e) {}
     document.getElementById(formId).style.display = 'none';
     document.getElementById(successId).style.display = 'block';
     if (noteId) {
       var note = document.getElementById(noteId);
       if (note) note.style.display = 'none';
     }
-  }).catch(function() {
-    // Even on catch, the data was likely sent
-    document.getElementById(formId).style.display = 'none';
-    document.getElementById(successId).style.display = 'block';
-    if (noteId) {
-      var note = document.getElementById(noteId);
-      if (note) note.style.display = 'none';
-    }
-  });
+  }, 3000);
 }
 
 // Click handlers
