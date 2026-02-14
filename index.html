@@ -1,936 +1,1423 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>StepOut Daily — Walk More, Live Longer</title>
-  <meta name="description" content="A longevity-focused walking and wellness app. Schedule walks, track streaks, and build habits that add years to your life." />
-  <meta name="theme-color" content="#0a160a" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="StepOut Daily" />
-  <meta property="og:title" content="StepOut Daily — Walk More, Live Longer" />
-  <meta property="og:description" content="A longevity-focused walking and wellness app." />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://stepoutdaily.com" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+<title>StepOut Daily — Walk More. Live Longer.</title>
+<meta name="description" content="StepOut Daily helps you build a walking habit with smart weather-based scheduling, longevity insights, and streak tracking." />
+<meta name="theme-color" content="#0a160a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="manifest" href="/manifest.json" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
 
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-  <link rel="manifest" href="/manifest.json" />
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" crossorigin></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js" crossorigin></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" crossorigin></script>
-  <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
+<!-- React -->
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    body { background: #0a160a; overflow-x: hidden; }
-    html { scroll-behavior: smooth; }
-    ::-webkit-scrollbar { display: none; }
-    input { font-family: inherit; }
-    input::placeholder { color: #5a6a50; }
-  </style>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #0a160a; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Instrument Sans', 'Avenir Next', system-ui, sans-serif; }
+  input { font-family: inherit; }
+  button { font-family: inherit; -webkit-appearance: none; }
+  ::-webkit-scrollbar { display: none; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+  .fade-up { animation: fadeUp 0.4s ease forwards; }
+  .pulse { animation: pulse 2s ease-in-out infinite; }
+</style>
 </head>
 <body>
-  <div id="root"></div>
+<div id="root"></div>
 
-  <script>
-    var auth = null;
-    var db = null;
-    var firebaseReady = false;
-    try {
-      if (typeof firebase !== 'undefined') {
-        firebase.initializeApp({
-          apiKey: "AIzaSyCT29XI6HCOmw5n7rn1i0oJ2rSJ_f4zW6I",
-          authDomain: "stepout-daily.firebaseapp.com",
-          projectId: "stepout-daily",
-          storageBucket: "stepout-daily.firebasestorage.app",
-          messagingSenderId: "817332362346",
-          appId: "1:817332362346:web:99264c2ab36ebf36817e13"
-        });
-        auth = firebase.auth();
-        db = firebase.firestore();
-        firebaseReady = true;
+<script type="text/babel">
+/* ============================================================
+   StepOut Daily — Production App
+   ============================================================ */
+var useState = React.useState;
+var useEffect = React.useEffect;
+var useRef = React.useRef;
+var useCallback = React.useCallback;
+
+/* ───────── FIREBASE INIT ───────── */
+var firebaseReady = false;
+var auth = null;
+var db = null;
+var googleProvider = null;
+
+try {
+  firebase.initializeApp({
+    apiKey: "AIzaSyCT29XI6HCOmw5n7rn1i0oJ2rSJ_f4zW6I",
+    authDomain: "stepout-daily.firebaseapp.com",
+    projectId: "stepout-daily",
+    storageBucket: "stepout-daily.firebasestorage.app",
+    messagingSenderId: "817332362346",
+    appId: "1:817332362346:web:99264c2ab36ebf36817e13"
+  });
+  auth = firebase.auth();
+  db = firebase.firestore();
+  googleProvider = new firebase.auth.GoogleAuthProvider();
+  firebaseReady = true;
+} catch(e) {
+  console.warn("Firebase init failed:", e);
+}
+
+/* ───────── STATIC DATA ───────── */
+var DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+var FULL_DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+
+var INDOOR_ACTIVITIES = [
+  { name: "Squat & Breathe Circuit", howTo: "Do 3 rounds of: 10 air squats (sit back like into an invisible chair, stand back up), then 1 minute of slow deep breathing. Rest 30 seconds between rounds. Finish with 2 minutes of gentle marching in place to cool down.", tip: "Squats strengthen the muscles that keep you mobile and independent as you age. Pairing them with breathwork lowers your heart rate and builds recovery capacity.", duration: "10 min", icon: "\uD83E\uDDBB" },
+  { name: "Wall Push-up & Hold Routine", howTo: "Do 3 rounds of: 10 wall push-ups (stand arm\u2019s length from a wall, lean in and push back), then hold a wall plank for 30 seconds. Rest 45 seconds between rounds. Finish with 2 minutes of gentle shoulder rolls and arm circles.", tip: "Upper body strength is linked to lower all-cause mortality. Short routines done consistently beat occasional intense workouts.", duration: "10 min", icon: "\uD83D\uDCAA" },
+  { name: "Balance & Mobility Flow", howTo: "Start with 60 seconds balancing on each foot (hold a counter for safety). Then do 10 slow leg swings on each side. Repeat the balance holds. Finish with 3 minutes of slow walking in a figure-eight pattern.", tip: "The ability to stand on one leg for 10+ seconds is strongly correlated with longevity in adults over 50.", duration: "10 min", icon: "\uD83E\uDDD8" },
+  { name: "Sit-to-Stand Challenge", howTo: "Sit in a sturdy chair with arms crossed. Stand all the way up, then sit back down. Do 10 reps, rest 1 minute. Repeat for 4 rounds. Between rounds, do gentle quad stretches.", tip: "How many times you can stand from a chair in 30 seconds predicts your functional fitness for the next decade.", duration: "10 min", icon: "\uD83E\uDE91" },
+  { name: "Grip & Hang Practice", howTo: "Find a sturdy door frame or overhead ledge. Hang with both hands for as long as you can, then rest 1 minute. Do 5 rounds. Between hangs, squeeze a rolled-up towel as hard as you can for 20 seconds with each hand.", tip: "Grip strength is one of the strongest predictors of longevity.", duration: "10 min", icon: "\uD83E\uDD32" },
+  { name: "Lunge & Walk Circuit", howTo: "Do 5 walking lunges on each leg. Then walk around the room at a brisk pace for 2 minutes. Repeat 3 times. Cool down with 1 minute of standing calf stretches.", tip: "Single-leg exercises improve balance and prevent falls \u2014 the #1 cause of injury-related death in older adults.", duration: "10 min", icon: "\uD83D\uDEB6" },
+  { name: "Guided Breathwork Session", howTo: "Round 1 (3 min): Box breathing \u2014 in 4s, hold 4s, out 4s, hold 4s. Round 2 (3 min): Extended exhale \u2014 in 4s, out 8s. Round 3 (3 min): Natural breathing with eyes closed. End with shoulder rolls.", tip: "Controlled breathing activates your parasympathetic nervous system, lowering cortisol and inflammation.", duration: "10 min", icon: "\uD83C\uDF2C\uFE0F" },
+  { name: "Calf Raise & March Combo", howTo: "Stand behind a chair for balance. Do 20 calf raises. Then march in place with high knees for 1 minute. Repeat 4 times. Finish with calf stretches.", tip: "Calf muscles act as a \u2018second heart,\u2019 pumping blood back up from your legs.", duration: "10 min", icon: "\uD83E\uDDB6" },
+];
+
+var LONGEVITY_QUOTES = [
+  "Walking 22 minutes a day can offset the health risks of prolonged sitting.",
+  "Adults who walk briskly for 30 min/day have a biological age 9 years younger.",
+  "Morning sunlight exposure helps regulate cortisol and improves sleep quality.",
+  "Even a 10-minute walk after meals significantly improves blood sugar regulation.",
+  "People who spend 120+ minutes per week in nature report significantly better health.",
+];
+
+var STREAK_MESSAGES = [
+  { min: 0, max: 0, msg: "Today\u2019s a fresh start. One step at a time." },
+  { min: 1, max: 2, msg: "You\u2019re building momentum \u2014 keep it going!" },
+  { min: 3, max: 6, msg: "You\u2019re on a roll! Consistency is the real superpower." },
+  { min: 7, max: 13, msg: "A full week! You\u2019re building a habit that adds years to your life." },
+  { min: 14, max: 29, msg: "Two weeks strong. Your body is already adapting and thanking you." },
+  { min: 30, max: 999, msg: "A month of daily movement. You\u2019re not just exercising \u2014 you\u2019re extending your life." },
+];
+
+var HEALTH_MILESTONES = [
+  { mins: 0, label: "Get moving to unlock your first milestone!" },
+  { mins: 60, label: "60 min/week \u2014 your mood and sleep are already improving" },
+  { mins: 90, label: "90 min/week \u2014 linked to 30% lower heart disease risk" },
+  { mins: 150, label: "150 min/week \u2014 you\u2019ve hit the WHO recommended activity level!" },
+  { mins: 200, label: "200 min/week \u2014 associated with significantly lower cancer risk" },
+  { mins: 300, label: "300+ min/week \u2014 maximum longevity benefits. You\u2019re in the top tier." },
+];
+
+function getRandomActivity() {
+  return INDOOR_ACTIVITIES[Math.floor(Math.random() * INDOOR_ACTIVITIES.length)];
+}
+
+/* ───────── WEATHER HELPERS ───────── */
+function getWeatherIcon(forecast) {
+  var f = (forecast || "").toLowerCase();
+  if (f.includes("thunder") || f.includes("storm")) return { icon: "\u26C8\uFE0F", good: false };
+  if (f.includes("rain") || f.includes("drizzle") || f.includes("shower")) return { icon: "\uD83C\uDF27\uFE0F", good: false };
+  if (f.includes("snow") || f.includes("sleet") || f.includes("ice") || f.includes("freez")) return { icon: "\u2744\uFE0F", good: false };
+  if (f.includes("fog") || f.includes("haze") || f.includes("mist")) return { icon: "\uD83C\uDF2B\uFE0F", good: true };
+  if (f.includes("cloud") || f.includes("overcast")) return { icon: "\u26C5", good: true };
+  if (f.includes("wind")) return { icon: "\uD83D\uDCA8", good: true };
+  if (f.includes("sun") || f.includes("clear") || f.includes("fair")) return { icon: "\u2600\uFE0F", good: true };
+  if (f.includes("partly")) return { icon: "\u26C5", good: true };
+  return { icon: "\u2600\uFE0F", good: true };
+}
+
+var MOCK_HOURLY = [
+  { time: "7 AM", temp: 52, condition: "Partly Cloudy", icon: "\u26C5", windMph: 4, good: true },
+  { time: "8 AM", temp: 55, condition: "Sunny", icon: "\u2600\uFE0F", windMph: 3, good: true },
+  { time: "9 AM", temp: 59, condition: "Sunny", icon: "\u2600\uFE0F", windMph: 5, good: true },
+  { time: "10 AM", temp: 63, condition: "Sunny", icon: "\u2600\uFE0F", windMph: 6, good: true },
+  { time: "11 AM", temp: 66, condition: "Partly Cloudy", icon: "\u26C5", windMph: 8, good: true },
+  { time: "12 PM", temp: 68, condition: "Cloudy", icon: "\u2601\uFE0F", windMph: 10, good: true },
+  { time: "1 PM", temp: 67, condition: "Rain", icon: "\uD83C\uDF27\uFE0F", windMph: 15, good: false },
+  { time: "2 PM", temp: 64, condition: "Rain", icon: "\uD83C\uDF27\uFE0F", windMph: 18, good: false },
+  { time: "3 PM", temp: 62, condition: "Cloudy", icon: "\u2601\uFE0F", windMph: 12, good: true },
+  { time: "4 PM", temp: 60, condition: "Partly Cloudy", icon: "\u26C5", windMph: 7, good: true },
+  { time: "5 PM", temp: 57, condition: "Clear", icon: "\uD83C\uDF05", windMph: 4, good: true },
+];
+
+var MOCK_WEEKLY = [
+  { day: 0, high: 62, low: 45, condition: "Sunny", icon: "\u2600\uFE0F", good: true },
+  { day: 1, high: 58, low: 42, condition: "Partly Cloudy", icon: "\u26C5", good: true },
+  { day: 2, high: 55, low: 40, condition: "Rain", icon: "\uD83C\uDF27\uFE0F", good: false },
+  { day: 3, high: 50, low: 38, condition: "Thunderstorms", icon: "\u26C8\uFE0F", good: false },
+  { day: 4, high: 60, low: 43, condition: "Cloudy", icon: "\u2601\uFE0F", good: true },
+  { day: 5, high: 65, low: 47, condition: "Sunny", icon: "\u2600\uFE0F", good: true },
+  { day: 6, high: 63, low: 46, condition: "Partly Cloudy", icon: "\u26C5", good: true },
+];
+
+/* ───────── FIRESTORE HELPERS ───────── */
+function getUserDocRef(uid) {
+  if (!db || !uid) return null;
+  return db.collection("users").doc(uid);
+}
+
+function getWeekId() {
+  var now = new Date();
+  var jan1 = new Date(now.getFullYear(), 0, 1);
+  var dayOfYear = Math.floor((now - jan1) / 86400000);
+  var weekNum = Math.ceil((dayOfYear + jan1.getDay() + 1) / 7);
+  return now.getFullYear() + "-W" + weekNum;
+}
+
+/* ═══════════════════════════════════════
+   WELCOME SCREEN (Auth)
+   ═══════════════════════════════════════ */
+function WelcomeScreen(props) {
+  var onAuth = props.onAuth;
+  var mode = useState("welcome"); // welcome, signup, login, forgot
+  var currentMode = mode[0];
+  var setMode = mode[1];
+  var emailState = useState("");
+  var email = emailState[0];
+  var setEmail = emailState[1];
+  var passState = useState("");
+  var password = passState[0];
+  var setPassword = passState[1];
+  var nameState = useState("");
+  var displayName = nameState[0];
+  var setDisplayName = nameState[1];
+  var errState = useState("");
+  var error = errState[0];
+  var setError = errState[1];
+  var successState = useState("");
+  var success = successState[0];
+  var setSuccess = successState[1];
+  var loadState = useState(false);
+  var loading = loadState[0];
+  var setLoading = loadState[1];
+  var resetEmailState = useState("");
+  var resetEmail = resetEmailState[0];
+  var setResetEmail = resetEmailState[1];
+
+  function handleGoogleSignIn() {
+    if (!firebaseReady || !auth || !googleProvider) {
+      setError("Firebase is not available. Please try again later.");
+      return;
+    }
+    setError(""); setLoading(true);
+    auth.signInWithPopup(googleProvider).then(function(result) {
+      setLoading(false);
+    }).catch(function(e) {
+      setLoading(false);
+      if (e.code === "auth/unauthorized-domain") {
+        setError("This domain isn\u2019t authorized yet. The site owner needs to add it in the Firebase Console under Authentication > Settings > Authorized Domains.");
+      } else if (e.code === "auth/popup-closed-by-user") {
+        setError("");
+      } else {
+        setError(e.message || "Sign-in failed. Please try again.");
       }
-    } catch(e) {
-      console.log("Firebase init error:", e.message);
+    });
+  }
+
+  function handleEmailSignUp() {
+    if (!email || !password) { setError("Please fill in all fields."); return; }
+    if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
+    if (!firebaseReady || !auth) { setError("Firebase not available."); return; }
+    setError(""); setLoading(true);
+    auth.createUserWithEmailAndPassword(email, password).then(function(result) {
+      if (displayName && result.user) {
+        return result.user.updateProfile({ displayName: displayName });
+      }
+    }).then(function() {
+      setLoading(false);
+    }).catch(function(e) {
+      setLoading(false);
+      if (e.code === "auth/email-already-in-use") {
+        setError("An account with this email already exists. Try signing in instead.");
+      } else {
+        setError(e.message || "Sign-up failed.");
+      }
+    });
+  }
+
+  function handleEmailSignIn() {
+    if (!email || !password) { setError("Please fill in all fields."); return; }
+    if (!firebaseReady || !auth) { setError("Firebase not available."); return; }
+    setError(""); setLoading(true);
+    auth.signInWithEmailAndPassword(email, password).then(function() {
+      setLoading(false);
+    }).catch(function(e) {
+      setLoading(false);
+      if (e.code === "auth/wrong-password" || e.code === "auth/invalid-credential") {
+        setError("Incorrect email or password. Please try again.");
+      } else if (e.code === "auth/user-not-found") {
+        setError("No account found with this email. Try creating one.");
+      } else {
+        setError(e.message || "Sign-in failed.");
+      }
+    });
+  }
+
+  function handlePasswordReset() {
+    var emailToReset = resetEmail || email;
+    if (!emailToReset) { setError("Please enter your email address."); return; }
+    if (!firebaseReady || !auth) { setError("Firebase not available."); return; }
+    setError(""); setSuccess(""); setLoading(true);
+    auth.fetchSignInMethodsForEmail(emailToReset).then(function(methods) {
+      if (methods.length === 0) {
+        setError("No account found with this email. Try creating one.");
+        setLoading(false);
+        return;
+      }
+      if (methods.includes("google.com") && !methods.includes("password")) {
+        setError("This account uses Google Sign-In. To reset your Google password, visit myaccount.google.com and use Google\u2019s password recovery.");
+        setLoading(false);
+        return;
+      }
+      return auth.sendPasswordResetEmail(emailToReset);
+    }).then(function(result) {
+      if (result !== undefined || (!error)) {
+        setSuccess("Password reset email sent! Check your inbox (and spam folder) for a link to reset your password.");
+      }
+      setLoading(false);
+    }).catch(function(e) {
+      setLoading(false);
+      if (e.code === "auth/too-many-requests") {
+        setError("Too many requests. Please wait a few minutes and try again.");
+      } else {
+        setError(e.message || "Failed to send reset email.");
+      }
+    });
+  }
+
+  var containerStyle = {
+    maxWidth: 390, margin: "0 auto", minHeight: "100vh",
+    background: "linear-gradient(170deg, #1a2e1a 0%, #0f1f0f 40%, #0a160a 100%)",
+    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+    padding: "40px 28px", color: "#e8efe4", position: "relative", overflow: "hidden",
+  };
+
+  var inputStyle = {
+    width: "100%", padding: "14px 16px", borderRadius: 12, border: "1px solid rgba(134,194,108,0.2)",
+    background: "rgba(255,255,255,0.06)", color: "#e8efe4", fontSize: 15, outline: "none",
+    marginBottom: 12,
+  };
+
+  var primaryBtn = {
+    width: "100%", padding: "16px 0", borderRadius: 14, border: "none", cursor: "pointer",
+    background: "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)", color: "#0a160a",
+    fontSize: 16, fontWeight: 700, fontFamily: "inherit", marginBottom: 12,
+    boxShadow: "0 4px 20px rgba(134,194,108,0.3)", opacity: loading ? 0.6 : 1,
+  };
+
+  var secondaryBtn = {
+    width: "100%", padding: "14px 0", borderRadius: 14, cursor: "pointer",
+    background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)",
+    color: "#e8efe4", fontSize: 15, fontWeight: 600, fontFamily: "inherit", marginBottom: 10,
+  };
+
+  var linkBtn = {
+    background: "none", border: "none", color: "#86c26c", fontSize: 14,
+    cursor: "pointer", fontFamily: "inherit", padding: "8px 0",
+  };
+
+  return React.createElement("div", { style: containerStyle },
+    React.createElement("div", { style: { position: "absolute", top: -80, right: -80, width: 260, height: 260, background: "radial-gradient(circle, rgba(134,194,108,0.12) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" } }),
+
+    /* ── WELCOME MODE ── */
+    currentMode === "welcome" && React.createElement("div", { className: "fade-up", style: { textAlign: "center", width: "100%" } },
+      React.createElement("div", { style: { fontSize: 56, marginBottom: 16 } }, "\uD83D\uDEB6\u200D\u2640\uFE0F"),
+      React.createElement("h1", { style: { fontFamily: "'Playfair Display', Georgia, serif", fontSize: 38, fontWeight: 700, margin: "0 0 8px", color: "#f0f7ec" } },
+        "Step", React.createElement("span", { style: { color: "#86c26c" } }, "Out")
+      ),
+      React.createElement("div", { style: { fontSize: 15, color: "#8a9a7e", marginBottom: 40 } }, "Walk More. Live Longer."),
+
+      React.createElement("button", { onClick: handleGoogleSignIn, disabled: loading, style: Object.assign({}, secondaryBtn, { display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }) },
+        React.createElement("img", { src: "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg", alt: "Google", style: { width: 20, height: 20 } }),
+        "Sign in with Google"
+      ),
+
+      React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, margin: "8px 0 16px" } },
+        React.createElement("div", { style: { flex: 1, height: 1, background: "rgba(255,255,255,0.08)" } }),
+        React.createElement("span", { style: { fontSize: 12, color: "#5a6a50" } }, "or"),
+        React.createElement("div", { style: { flex: 1, height: 1, background: "rgba(255,255,255,0.08)" } })
+      ),
+
+      React.createElement("button", { onClick: function() { setMode("signup"); setError(""); setSuccess(""); }, style: primaryBtn }, "Create Account"),
+      React.createElement("button", { onClick: function() { setMode("login"); setError(""); setSuccess(""); }, style: linkBtn }, "Already have an account? Sign In"),
+
+      error && React.createElement("div", { style: { marginTop: 16, padding: "12px 16px", borderRadius: 10, background: "rgba(220,80,60,0.12)", border: "1px solid rgba(220,80,60,0.25)", color: "#e8efe4", fontSize: 13, lineHeight: 1.4 } }, error)
+    ),
+
+    /* ── SIGNUP MODE ── */
+    currentMode === "signup" && React.createElement("div", { className: "fade-up", style: { width: "100%" } },
+      React.createElement("button", { onClick: function() { setMode("welcome"); setError(""); setSuccess(""); }, style: Object.assign({}, linkBtn, { marginBottom: 20 }) }, "\u2190 Back"),
+      React.createElement("h2", { style: { fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, color: "#f0f7ec", marginBottom: 24 } }, "Create Account"),
+      React.createElement("input", { type: "text", placeholder: "Your name (optional)", value: displayName, onChange: function(e) { setDisplayName(e.target.value); }, style: inputStyle }),
+      React.createElement("input", { type: "email", placeholder: "Email address", value: email, onChange: function(e) { setEmail(e.target.value); }, style: inputStyle }),
+      React.createElement("input", { type: "password", placeholder: "Password (6+ characters)", value: password, onChange: function(e) { setPassword(e.target.value); }, style: inputStyle }),
+      React.createElement("button", { onClick: handleEmailSignUp, disabled: loading, style: primaryBtn }, loading ? "Creating account..." : "Create Account"),
+      React.createElement("button", { onClick: handleGoogleSignIn, disabled: loading, style: Object.assign({}, secondaryBtn, { display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }) },
+        React.createElement("img", { src: "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg", alt: "Google", style: { width: 20, height: 20 } }),
+        "Sign up with Google"
+      ),
+      error && React.createElement("div", { style: { marginTop: 12, padding: "12px 16px", borderRadius: 10, background: "rgba(220,80,60,0.12)", border: "1px solid rgba(220,80,60,0.25)", color: "#e8efe4", fontSize: 13, lineHeight: 1.4 } }, error)
+    ),
+
+    /* ── LOGIN MODE ── */
+    currentMode === "login" && React.createElement("div", { className: "fade-up", style: { width: "100%" } },
+      React.createElement("button", { onClick: function() { setMode("welcome"); setError(""); setSuccess(""); }, style: Object.assign({}, linkBtn, { marginBottom: 20 }) }, "\u2190 Back"),
+      React.createElement("h2", { style: { fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, color: "#f0f7ec", marginBottom: 24 } }, "Sign In"),
+      React.createElement("input", { type: "email", placeholder: "Email address", value: email, onChange: function(e) { setEmail(e.target.value); }, style: inputStyle }),
+      React.createElement("input", { type: "password", placeholder: "Password", value: password, onChange: function(e) { setPassword(e.target.value); }, style: inputStyle }),
+      React.createElement("button", { onClick: handleEmailSignIn, disabled: loading, style: primaryBtn }, loading ? "Signing in..." : "Sign In"),
+      React.createElement("button", { onClick: handleGoogleSignIn, disabled: loading, style: Object.assign({}, secondaryBtn, { display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }) },
+        React.createElement("img", { src: "https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg", alt: "Google", style: { width: 20, height: 20 } }),
+        "Sign in with Google"
+      ),
+      React.createElement("button", { onClick: function() { setMode("forgot"); setError(""); setSuccess(""); setResetEmail(email); }, style: linkBtn }, "Forgot your password?"),
+      error && React.createElement("div", { style: { marginTop: 12, padding: "12px 16px", borderRadius: 10, background: "rgba(220,80,60,0.12)", border: "1px solid rgba(220,80,60,0.25)", color: "#e8efe4", fontSize: 13, lineHeight: 1.4 } }, error)
+    ),
+
+    /* ── FORGOT PASSWORD MODE ── */
+    currentMode === "forgot" && React.createElement("div", { className: "fade-up", style: { width: "100%" } },
+      React.createElement("button", { onClick: function() { setMode("login"); setError(""); setSuccess(""); }, style: Object.assign({}, linkBtn, { marginBottom: 20 }) }, "\u2190 Back to Sign In"),
+      React.createElement("h2", { style: { fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, color: "#f0f7ec", marginBottom: 8 } }, "Reset Password"),
+      React.createElement("p", { style: { fontSize: 14, color: "#8a9a7e", marginBottom: 24, lineHeight: 1.5 } }, "Enter your email and we\u2019ll send you a link to reset your password. If you signed up with Google, we\u2019ll let you know."),
+      React.createElement("input", { type: "email", placeholder: "Email address", value: resetEmail, onChange: function(e) { setResetEmail(e.target.value); }, style: inputStyle }),
+      React.createElement("button", { onClick: handlePasswordReset, disabled: loading, style: primaryBtn }, loading ? "Sending..." : "Send Reset Link"),
+      error && React.createElement("div", { style: { marginTop: 12, padding: "12px 16px", borderRadius: 10, background: "rgba(220,80,60,0.12)", border: "1px solid rgba(220,80,60,0.25)", color: "#e8efe4", fontSize: 13, lineHeight: 1.4 } }, error),
+      success && React.createElement("div", { style: { marginTop: 12, padding: "12px 16px", borderRadius: 10, background: "rgba(134,194,108,0.12)", border: "1px solid rgba(134,194,108,0.25)", color: "#a8d98a", fontSize: 13, lineHeight: 1.4 } }, success)
+    )
+  );
+}
+
+/* ═══════════════════════════════════════
+   LOCATION PERMISSION PROMPT
+   ═══════════════════════════════════════ */
+function LocationPrompt(props) {
+  var onAllow = props.onAllow;
+  var onSkip = props.onSkip;
+
+  return React.createElement("div", { style: {
+    background: "rgba(134,194,108,0.08)", border: "1px solid rgba(134,194,108,0.25)",
+    borderRadius: 20, padding: 24, marginBottom: 20, textAlign: "center",
+  } },
+    React.createElement("div", { style: { fontSize: 40, marginBottom: 12 } }, "\uD83D\uDCCD"),
+    React.createElement("div", { style: { fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: "#f0f7ec", marginBottom: 8 } }, "Enable Location for Weather"),
+    React.createElement("div", { style: { fontSize: 14, color: "#8a9a7e", lineHeight: 1.5, marginBottom: 20 } }, "StepOut Daily uses your location to show local weather and suggest the best times to walk. Your location is never stored or shared."),
+    React.createElement("button", { onClick: onAllow, style: {
+      width: "100%", padding: "16px 0", borderRadius: 14, border: "none", cursor: "pointer",
+      background: "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)", color: "#0a160a",
+      fontSize: 16, fontWeight: 700, fontFamily: "inherit", marginBottom: 10,
+      boxShadow: "0 4px 20px rgba(134,194,108,0.3)",
+    } }, "\uD83D\uDCCD Allow Location Access"),
+    React.createElement("button", { onClick: onSkip, style: {
+      width: "100%", padding: "12px 0", borderRadius: 14, cursor: "pointer",
+      background: "none", border: "1px solid rgba(255,255,255,0.08)",
+      color: "#5a6a50", fontSize: 13, fontWeight: 500, fontFamily: "inherit",
+    } }, "Skip for Now (use sample weather)")
+  );
+}
+
+/* ═══════════════════════════════════════
+   MAIN APP
+   ═══════════════════════════════════════ */
+function StepOutApp(props) {
+  var user = props.user;
+  var today = new Date();
+  var todayIdx = today.getDay();
+  var dayName = FULL_DAYS[todayIdx];
+  var dateStr = today.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+  var todayKey = today.toISOString().split("T")[0]; // "2026-02-14"
+
+  // Core state
+  var screenState = useState("home");
+  var screen = screenState[0];
+  var setScreen = screenState[1];
+  var durationState = useState(30);
+  var duration = durationState[0];
+  var setDuration = durationState[1];
+  var showSettingsState = useState(false);
+  var showSettings = showSettingsState[0];
+  var setShowSettings = showSettingsState[1];
+  var dailyQuoteState = useState(function() { return LONGEVITY_QUOTES[Math.floor(Math.random() * LONGEVITY_QUOTES.length)]; });
+  var dailyQuote = dailyQuoteState[0];
+  var indoorState = useState(getRandomActivity());
+  var indoorActivity = indoorState[0];
+  var setIndoorActivity = indoorState[1];
+  var selectedSlotState = useState(null);
+  var selectedSlot = selectedSlotState[0];
+  var setSelectedSlot = selectedSlotState[1];
+
+  // Profile dropdown
+  var profileOpenState = useState(false);
+  var profileOpen = profileOpenState[0];
+  var setProfileOpen = profileOpenState[1];
+  var passwordMsgState = useState("");
+  var passwordMsg = passwordMsgState[0];
+  var setPasswordMsg = passwordMsgState[1];
+  var passwordErrState = useState("");
+  var passwordErr = passwordErrState[0];
+  var setPasswordErr = passwordErrState[1];
+
+  // Weather & location
+  var locationState = useState("unknown"); // "unknown", "granted", "denied", "loading", "skipped"
+  var locationStatus = locationState[0];
+  var setLocationStatus = locationState[1];
+  var hourlyWeatherState = useState(MOCK_HOURLY);
+  var hourlyWeather = hourlyWeatherState[0];
+  var setHourlyWeather = hourlyWeatherState[1];
+  var weeklyWeatherState = useState(MOCK_WEEKLY);
+  var weeklyWeather = weeklyWeatherState[0];
+  var setWeeklyWeather = weeklyWeatherState[1];
+  var locationNameState = useState("");
+  var locationName = locationNameState[0];
+  var setLocationName = locationNameState[1];
+
+  // User data (synced with Firestore)
+  var streakState = useState(0);
+  var streak = streakState[0];
+  var setStreak = streakState[1];
+  var weekLogState = useState({});
+  var weekLog = weekLogState[0];
+  var setWeekLog = weekLogState[1];
+  var weeklyMinsState = useState(0);
+  var weeklyMins = weeklyMinsState[0];
+  var setWeeklyMins = weeklyMinsState[1];
+  var dataLoadedState = useState(false);
+  var dataLoaded = dataLoadedState[0];
+  var setDataLoaded = dataLoadedState[1];
+
+  // Check-in state
+  var checkInVisibleState = useState(false);
+  var checkInVisible = checkInVisibleState[0];
+  var setCheckInVisible = checkInVisibleState[1];
+  var missedWalkState = useState(false);
+  var missedWalk = missedWalkState[0];
+  var setMissedWalk = missedWalkState[1];
+  var scheduledWalkState = useState(null);
+  var scheduledWalk = scheduledWalkState[0];
+  var setScheduledWalk = scheduledWalkState[1];
+
+  var weekId = getWeekId();
+
+  /* ── LOAD USER DATA FROM FIRESTORE (real-time listener) ── */
+  useEffect(function() {
+    if (!firebaseReady || !db || !user || !user.uid) {
+      setDataLoaded(true);
+      return;
     }
-  </script>
+    var docRef = getUserDocRef(user.uid);
+    if (!docRef) { setDataLoaded(true); return; }
 
-  <script type="text/babel">
-    const { useState, useEffect } = React;
+    // Listen for real-time updates (this is key for cross-device sync!)
+    var unsubscribe = docRef.onSnapshot(function(snap) {
+      if (snap.exists) {
+        var data = snap.data();
+        var savedStreak = data.streak || 0;
+        var savedWeekId = data.weekId || "";
+        var savedWeekLog = data.weekLog || {};
+        var savedWeeklyMins = data.weeklyMins || 0;
+        var savedDuration = data.duration || 30;
+        var savedLocationStatus = data.locationStatus || "unknown";
 
-    var DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-    var FULL_DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-
-    var INDOOR_ACTIVITIES = [
-      { name: "Squat & Breathe Circuit", howTo: "Do 3 rounds of: 10 air squats (sit back like into an invisible chair, stand back up), then 1 minute of slow deep breathing. Rest 30 seconds between rounds. Finish with 2 minutes of gentle marching in place to cool down.", tip: "Squats strengthen the muscles that keep you mobile and independent as you age. Pairing them with breathwork lowers your heart rate and builds recovery capacity.", duration: "10 min", icon: "🦵" },
-      { name: "Wall Push-up & Hold Routine", howTo: "Do 3 rounds of: 10 wall push-ups (stand arm's length from a wall, lean in and push back), then hold a wall plank (lean toward the wall with arms straight) for 30 seconds. Rest 45 seconds between rounds. Finish with 2 minutes of gentle shoulder rolls and arm circles.", tip: "Upper body strength is linked to lower all-cause mortality. Short routines done consistently beat occasional intense workouts.", duration: "10 min", icon: "💪" },
-      { name: "Balance & Mobility Flow", howTo: "Start with 60 seconds balancing on each foot (hold a counter for safety). Then do 10 slow leg swings on each side. Repeat the balance holds for 60 seconds each. Finish with 3 minutes of slow walking in a figure-eight pattern around your room, focusing on smooth heel-to-toe steps.", tip: "The ability to stand on one leg for 10+ seconds is strongly correlated with longevity in adults over 50. Practicing balance daily can dramatically reduce fall risk.", duration: "10 min", icon: "🧘" },
-      { name: "Sit-to-Stand Challenge", howTo: "Sit in a sturdy chair with arms crossed over your chest. Stand all the way up, then sit back down. Do 10 reps, rest 1 minute. Repeat for 4 rounds total. Between rounds, do gentle quad stretches.", tip: "How many times you can stand from a chair in 30 seconds predicts your functional fitness for the next decade.", duration: "10 min", icon: "🪑" },
-      { name: "Grip & Hang Practice", howTo: "Find a sturdy door frame or overhead ledge. Hang with both hands for as long as you can (even 10 seconds is great), then rest 1 minute. Do 5 rounds. Between hangs, squeeze a rolled-up towel as hard as you can for 20 seconds with each hand.", tip: "Grip strength is one of the strongest predictors of longevity. Doctors increasingly use it as a quick health screening tool.", duration: "10 min", icon: "🤲" },
-      { name: "Lunge & Walk Circuit", howTo: "Do 5 walking lunges on each leg. Then walk around the room at a brisk pace for 2 minutes. Repeat this cycle 3 times. Hold onto a wall during lunges if you need balance support.", tip: "Single-leg exercises improve balance and prevent falls, the number one cause of injury-related death in older adults.", duration: "10 min", icon: "🚶" },
-      { name: "Guided Breathwork Session", howTo: "Sit or lie down comfortably. Round 1 (3 min): Box breathing. Round 2 (3 min): Extended exhale. Round 3 (3 min): Natural breathing with eyes closed.", tip: "Controlled breathing activates your parasympathetic nervous system, lowering cortisol and inflammation.", duration: "10 min", icon: "🌬️" },
-      { name: "Calf Raise & March Combo", howTo: "Stand behind a chair for balance. Do 20 calf raises (rise onto tiptoes, pause, lower slowly). Then march in place with high knees for 1 minute. Repeat this cycle 4 times.", tip: "Calf muscles act as a second heart, pumping blood back up from your legs. Strong calves mean better circulation.", duration: "10 min", icon: "🦶" },
-    ];
-
-    var LONGEVITY_QUOTES = [
-      "Walking 22 minutes a day can offset the health risks of prolonged sitting.",
-      "Adults who walk briskly for 30 min/day have a biological age 9 years younger.",
-      "Morning sunlight exposure helps regulate cortisol and improves sleep quality.",
-      "Even a 10-minute walk after meals significantly improves blood sugar regulation.",
-      "People who spend 120+ minutes per week in nature report significantly better health.",
-    ];
-
-    var STREAK_MESSAGES = [
-      { min: 0, max: 0, msg: "Today is a fresh start. One step at a time." },
-      { min: 1, max: 2, msg: "You are building momentum — keep it going!" },
-      { min: 3, max: 6, msg: "You are on a roll! Consistency is the real superpower." },
-      { min: 7, max: 13, msg: "A full week! You are building a habit that adds years to your life." },
-      { min: 14, max: 29, msg: "Two weeks strong. Your body is already adapting and thanking you." },
-      { min: 30, max: 999, msg: "A month of daily movement. You are extending your life." },
-    ];
-
-    var HEALTH_MILESTONES = [
-      { mins: 0, label: "Get moving to unlock your first milestone!" },
-      { mins: 60, label: "60 min/week — your mood and sleep are already improving" },
-      { mins: 90, label: "90 min/week — linked to 30% lower heart disease risk" },
-      { mins: 150, label: "150 min/week — you hit the WHO recommended activity level!" },
-      { mins: 200, label: "200 min/week — associated with significantly lower cancer risk" },
-      { mins: 300, label: "300+ min/week — maximum longevity benefits. Top tier." },
-    ];
-
-    function getRandomActivity() {
-      return INDOOR_ACTIVITIES[Math.floor(Math.random() * INDOOR_ACTIVITIES.length)];
-    }
-
-    async function saveUserData(userId, data) {
-      if (!firebaseReady || !db) return;
-      try { await db.collection('users').doc(userId).set(data, { merge: true }); }
-      catch(e) { console.log("Save error:", e.message); }
-    }
-
-    async function loadUserData(userId) {
-      if (!firebaseReady || !db) return null;
+        // If it is a new week, reset weekly data
+        if (savedWeekId !== weekId) {
+          setWeekLog({});
+          setWeeklyMins(0);
+        } else {
+          setWeekLog(savedWeekLog);
+          setWeeklyMins(savedWeeklyMins);
+        }
+        setStreak(savedStreak);
+        setDuration(savedDuration);
+        if (savedLocationStatus === "granted" || savedLocationStatus === "skipped") {
+          setLocationStatus(savedLocationStatus);
+        }
+      }
+      setDataLoaded(true);
+    }, function(err) {
+      console.warn("Firestore listener error:", err);
+      // Fallback to localStorage
       try {
-        var doc = await db.collection('users').doc(userId).get();
-        return doc.exists ? doc.data() : null;
-      } catch(e) { return null; }
-    }
+        var local = JSON.parse(localStorage.getItem("stepout_data") || "{}");
+        if (local.weekId === weekId) {
+          setWeekLog(local.weekLog || {});
+          setWeeklyMins(local.weeklyMins || 0);
+        }
+        setStreak(local.streak || 0);
+        if (local.duration) setDuration(local.duration);
+        if (local.locationStatus) setLocationStatus(local.locationStatus);
+      } catch(e) {}
+      setDataLoaded(true);
+    });
 
-    async function fetchWeather(lat, lon) {
-      try {
-        var pointRes = await fetch("https://api.weather.gov/points/" + lat + "," + lon, {
-          headers: { 'User-Agent': 'StepOutDaily/1.0 (contact@stepoutdaily.com)' }
-        });
-        var pointData = await pointRes.json();
-        var results = await Promise.all([
-          fetch(pointData.properties.forecast, { headers: { 'User-Agent': 'StepOutDaily/1.0' } }),
-          fetch(pointData.properties.forecastHourly, { headers: { 'User-Agent': 'StepOutDaily/1.0' } })
-        ]);
-        return { forecast: await results[0].json(), hourly: await results[1].json() };
-      } catch(e) { return null; }
-    }
+    return function() { unsubscribe(); };
+  }, [user && user.uid]);
 
-    function getWeatherIcon(f) {
-      f = (f || "").toLowerCase();
-      if (f.includes("thunder")) return "⛈️";
-      if (f.includes("rain") || f.includes("shower")) return "🌧️";
-      if (f.includes("snow")) return "🌨️";
-      if (f.includes("partly") && f.includes("cloud")) return "⛅";
-      if (f.includes("cloud") || f.includes("overcast")) return "☁️";
-      if (f.includes("fog")) return "🌫️";
-      return "☀️";
-    }
-
-    function isGoodWeather(f) {
-      f = (f || "").toLowerCase();
-      return !f.includes("thunder") && !f.includes("heavy rain") && !f.includes("snow") && !f.includes("storm");
-    }
-
-    var GoogleIcon = function() {
-      return (
-        <svg width="20" height="20" viewBox="0 0 24 24">
-          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
-          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-        </svg>
-      );
+  /* ── SAVE USER DATA TO FIRESTORE ── */
+  function saveData(updates) {
+    var dataToSave = {
+      streak: updates.streak !== undefined ? updates.streak : streak,
+      weekId: weekId,
+      weekLog: updates.weekLog !== undefined ? updates.weekLog : weekLog,
+      weeklyMins: updates.weeklyMins !== undefined ? updates.weeklyMins : weeklyMins,
+      duration: updates.duration !== undefined ? updates.duration : duration,
+      locationStatus: updates.locationStatus !== undefined ? updates.locationStatus : locationStatus,
+      lastUpdated: new Date().toISOString(),
+      displayName: user.displayName || "",
+      email: user.email || "",
     };
 
-    /* =========== SHARED STYLES =========== */
-    var pageWrap = { maxWidth: 390, margin: "0 auto", minHeight: "100vh", background: "linear-gradient(170deg, #1a2e1a 0%, #0f1f0f 40%, #0a160a 100%)", fontFamily: "'Instrument Sans', 'Avenir Next', system-ui, sans-serif", color: "#e8efe4" };
-    var fontLink = "https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap";
-    var inputStyle = { width: "100%", padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "#e8efe4", fontSize: 15, fontFamily: "inherit", outline: "none", marginBottom: 12 };
-    var primaryBtn = { width: "100%", padding: "16px 0", borderRadius: 14, border: "none", background: "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)", color: "#0a160a", fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 4px 24px rgba(134,194,108,0.3)", marginBottom: 12 };
-    var googleBtn = { width: "100%", padding: "16px 0", borderRadius: 14, cursor: "pointer", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", color: "#e8efe4", fontSize: 15, fontWeight: 600, fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 12 };
-    var backBtn = { background: "none", border: "none", color: "#86c26c", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 0, marginBottom: 32 };
-    var linkBtn = { background: "none", border: "none", color: "#86c26c", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: "8px 0" };
-    var errBox = function(msg) { return msg ? <div style={{ color: "#e07060", fontSize: 13, marginBottom: 12, padding: "10px 14px", background: "rgba(224,112,96,0.1)", borderRadius: 10 }}>{msg}</div> : null; };
-    var successBox = function(msg) { return msg ? <div style={{ color: "#86c26c", fontSize: 13, marginBottom: 12, padding: "10px 14px", background: "rgba(134,194,108,0.1)", borderRadius: 10 }}>{msg}</div> : null; };
-
-    /* =========== WELCOME SCREEN =========== */
-    function WelcomeScreen({ onLogin }) {
-      const [mode, setMode] = useState("welcome");
-      const [email, setEmail] = useState("");
-      const [password, setPassword] = useState("");
-      const [name, setName] = useState("");
-      const [error, setError] = useState("");
-      const [success, setSuccess] = useState("");
-      const [loading, setLoading] = useState(false);
-      const [resetEmail, setResetEmail] = useState("");
-
-      async function handleGoogleSignIn() {
-        setError(""); setLoading(true);
-        if (firebaseReady && auth) {
-          try {
-            var provider = new firebase.auth.GoogleAuthProvider();
-            var result = await auth.signInWithPopup(provider);
-            onLogin({ uid: result.user.uid, email: result.user.email, name: result.user.displayName, provider: "google" });
-          } catch(e) {
-            setError(e.code === "auth/unauthorized-domain" ? "Add stepoutdaily.com to Firebase authorized domains (Authentication > Settings)" : e.message);
-            setLoading(false);
-          }
-        } else {
-          onLogin({ uid: "offline_" + Date.now(), email: "guest@stepoutdaily.com", name: "Guest User", provider: "offline" });
-        }
+    // Save to Firestore
+    if (firebaseReady && db && user && user.uid) {
+      var docRef = getUserDocRef(user.uid);
+      if (docRef) {
+        docRef.set(dataToSave, { merge: true }).catch(function(e) {
+          console.warn("Firestore save error:", e);
+        });
       }
-
-      async function handleEmailSignUp() {
-        if (!email || !password) { setError("Please enter email and password"); return; }
-        if (password.length < 6) { setError("Password must be at least 6 characters"); return; }
-        setError(""); setLoading(true);
-        if (firebaseReady && auth) {
-          try {
-            var result = await auth.createUserWithEmailAndPassword(email, password);
-            if (name) await result.user.updateProfile({ displayName: name });
-            onLogin({ uid: result.user.uid, email: result.user.email, name: name || email, provider: "email" });
-          } catch(e) {
-            setError(e.code === "auth/email-already-in-use" ? "Account exists. Try signing in." : e.message);
-            setLoading(false);
-          }
-        } else {
-          onLogin({ uid: "offline_" + Date.now(), email: email, name: name || email, provider: "offline" });
-        }
-      }
-
-      async function handleEmailSignIn() {
-        if (!email || !password) { setError("Please enter email and password"); return; }
-        setError(""); setLoading(true);
-        if (firebaseReady && auth) {
-          try {
-            var result = await auth.signInWithEmailAndPassword(email, password);
-            onLogin({ uid: result.user.uid, email: result.user.email, name: result.user.displayName || email, provider: "email" });
-          } catch(e) {
-            setError(e.code === "auth/wrong-password" ? "Incorrect password." : e.code === "auth/user-not-found" ? "No account found. Try creating one." : e.message);
-            setLoading(false);
-          }
-        } else {
-          onLogin({ uid: "offline_" + Date.now(), email: email, name: email, provider: "offline" });
-        }
-      }
-
-      // PASSWORD RESET
-      async function handlePasswordReset() {
-        var emailToReset = resetEmail || email;
-        if (!emailToReset) { setError("Please enter your email address"); return; }
-        setError(""); setSuccess(""); setLoading(true);
-        if (firebaseReady && auth) {
-          try {
-            // First check what sign-in methods exist for this email
-            var methods = await auth.fetchSignInMethodsForEmail(emailToReset);
-            if (methods.length === 0) {
-              setError("No account found with this email. Try creating one.");
-              setLoading(false);
-              return;
-            }
-            if (methods.includes("google.com") && !methods.includes("password")) {
-              // Google-only account
-              setError("This account uses Google Sign-In. To reset your password, go to myaccount.google.com and use Google's password recovery.");
-              setLoading(false);
-              return;
-            }
-            // Has email/password — send reset
-            await auth.sendPasswordResetEmail(emailToReset);
-            setSuccess("Password reset email sent! Check your inbox (and spam folder) for a link to reset your password.");
-            setLoading(false);
-          } catch(e) {
-            if (e.code === "auth/user-not-found") {
-              setError("No account found with this email.");
-            } else if (e.code === "auth/too-many-requests") {
-              setError("Too many reset attempts. Please wait a few minutes and try again.");
-            } else {
-              setError(e.message);
-            }
-            setLoading(false);
-          }
-        } else {
-          setError("Password reset requires an internet connection.");
-          setLoading(false);
-        }
-      }
-
-      // WELCOME
-      if (mode === "welcome") {
-        return (
-          <div style={{...pageWrap, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 28px", position: "relative", overflow: "hidden" }}>
-            <link href={fontLink} rel="stylesheet" />
-            <div style={{ position: "absolute", top: -80, right: -80, width: 260, height: 260, background: "radial-gradient(circle, rgba(134,194,108,0.15) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" }} />
-            <div style={{ position: "absolute", bottom: 80, left: -60, width: 200, height: 200, background: "radial-gradient(circle, rgba(194,168,108,0.1) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" }} />
-            <div style={{ fontSize: 64, marginBottom: 16 }}>🚶‍♀️</div>
-            <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 42, fontWeight: 700, margin: "0 0 4px", color: "#f0f7ec", textAlign: "center" }}>Step<span style={{ color: "#86c26c" }}>Out</span></h1>
-            <div style={{ fontSize: 16, color: "#86c26c", fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>Daily</div>
-            <div style={{ fontSize: 16, color: "#8a9a7e", textAlign: "center", lineHeight: 1.5, marginBottom: 40, maxWidth: 280 }}>Walk more. Live longer. Build daily habits that add years to your life.</div>
-            <button onClick={handleGoogleSignIn} disabled={loading} style={googleBtn}><GoogleIcon /> Continue with Google</button>
-            <div style={{ display: "flex", alignItems: "center", gap: 16, width: "100%", margin: "8px 0 20px" }}><div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.1)" }} /><span style={{ fontSize: 12, color: "#5a6a50" }}>or</span><div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.1)" }} /></div>
-            <button onClick={function() { setMode("signup"); setError(""); setSuccess(""); }} style={primaryBtn}>Create an Account</button>
-            <button onClick={function() { setMode("login"); setError(""); setSuccess(""); }} style={linkBtn}>Already have an account? Sign In</button>
-            {errBox(error)}
-            <div style={{ fontSize: 11, color: "#4a5a40", textAlign: "center", marginTop: 24, lineHeight: 1.5, maxWidth: 280 }}>By continuing, you agree to our Terms of Service and Privacy Policy</div>
-          </div>
-        );
-      }
-
-      // SIGN UP
-      if (mode === "signup") {
-        return (
-          <div style={{...pageWrap, padding: "60px 28px" }}>
-            <link href={fontLink} rel="stylesheet" />
-            <button onClick={function() { setMode("welcome"); setError(""); setSuccess(""); }} style={backBtn}>← Back</button>
-            <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, color: "#f0f7ec", marginBottom: 6 }}>Create Your Account</h2>
-            <p style={{ fontSize: 14, color: "#8a9a7e", marginBottom: 28 }}>Start your longevity journey today</p>
-            <input type="text" placeholder="Your Name (optional)" value={name} onChange={function(e) { setName(e.target.value); }} style={inputStyle} />
-            <input type="email" placeholder="Email Address" value={email} onChange={function(e) { setEmail(e.target.value); }} style={inputStyle} />
-            <input type="password" placeholder="Password (6+ characters)" value={password} onChange={function(e) { setPassword(e.target.value); }} style={inputStyle} />
-            {errBox(error)}
-            <button onClick={handleEmailSignUp} disabled={loading} style={{...primaryBtn, opacity: loading ? 0.6 : 1}}>{loading ? "Creating Account..." : "Create Account"}</button>
-            <button onClick={handleGoogleSignIn} disabled={loading} style={googleBtn}><GoogleIcon /> Or continue with Google</button>
-            <button onClick={function() { setMode("login"); setError(""); setSuccess(""); }} style={{...linkBtn, width: "100%"}}>Already have an account? Sign In</button>
-          </div>
-        );
-      }
-
-      // LOGIN
-      if (mode === "login") {
-        return (
-          <div style={{...pageWrap, padding: "60px 28px" }}>
-            <link href={fontLink} rel="stylesheet" />
-            <button onClick={function() { setMode("welcome"); setError(""); setSuccess(""); }} style={backBtn}>← Back</button>
-            <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, color: "#f0f7ec", marginBottom: 6 }}>Welcome Back</h2>
-            <p style={{ fontSize: 14, color: "#8a9a7e", marginBottom: 28 }}>Sign in to continue your streak</p>
-            <input type="email" placeholder="Email Address" value={email} onChange={function(e) { setEmail(e.target.value); }} style={inputStyle} />
-            <input type="password" placeholder="Password" value={password} onChange={function(e) { setPassword(e.target.value); }} style={inputStyle} />
-            {errBox(error)}
-            {successBox(success)}
-            <button onClick={handleEmailSignIn} disabled={loading} style={{...primaryBtn, opacity: loading ? 0.6 : 1}}>{loading ? "Signing In..." : "Sign In"}</button>
-
-            {/* FORGOT PASSWORD LINK */}
-            <button onClick={function() { setMode("forgot"); setError(""); setSuccess(""); setResetEmail(email); }} style={{ background: "none", border: "none", color: "#c2a86c", fontSize: 13, cursor: "pointer", fontFamily: "inherit", padding: "4px 0", marginBottom: 12, width: "100%", textAlign: "center" }}>Forgot your password?</button>
-
-            <button onClick={handleGoogleSignIn} disabled={loading} style={googleBtn}><GoogleIcon /> Or continue with Google</button>
-            <button onClick={function() { setMode("signup"); setError(""); setSuccess(""); }} style={{...linkBtn, width: "100%"}}>Don't have an account? Create One</button>
-          </div>
-        );
-      }
-
-      // FORGOT PASSWORD
-      if (mode === "forgot") {
-        return (
-          <div style={{...pageWrap, padding: "60px 28px" }}>
-            <link href={fontLink} rel="stylesheet" />
-            <button onClick={function() { setMode("login"); setError(""); setSuccess(""); }} style={backBtn}>← Back to Sign In</button>
-
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🔑</div>
-            <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, color: "#f0f7ec", marginBottom: 6 }}>Reset Password</h2>
-            <p style={{ fontSize: 14, color: "#8a9a7e", marginBottom: 28, lineHeight: 1.5 }}>Enter the email address you used to create your account. We will send you a link to reset your password.</p>
-
-            <input type="email" placeholder="Email Address" value={resetEmail} onChange={function(e) { setResetEmail(e.target.value); }} style={inputStyle} />
-
-            {errBox(error)}
-            {successBox(success)}
-
-            <button onClick={handlePasswordReset} disabled={loading} style={{...primaryBtn, opacity: loading ? 0.6 : 1}}>{loading ? "Sending..." : "Send Reset Link"}</button>
-
-            <div style={{ background: "rgba(194,168,108,0.08)", border: "1px solid rgba(194,168,108,0.15)", borderRadius: 16, padding: 18, marginTop: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#c2a86c", marginBottom: 8 }}>💡 Tips</div>
-              <div style={{ fontSize: 13, color: "#a89a70", lineHeight: 1.6 }}>
-                <div style={{ marginBottom: 6 }}>• If you signed up with <strong style={{ color: "#e8efe4" }}>Google</strong>, you don't have a StepOut password. Use the "Continue with Google" button to sign in instead.</div>
-                <div style={{ marginBottom: 6 }}>• Check your <strong style={{ color: "#e8efe4" }}>spam/junk folder</strong> if you don't see the reset email.</div>
-                <div>• The reset link expires after 1 hour.</div>
-              </div>
-            </div>
-
-            <button onClick={function() { setMode("welcome"); setError(""); setSuccess(""); }} style={{...linkBtn, width: "100%", marginTop: 20 }}>Back to Sign In Options</button>
-          </div>
-        );
-      }
-
-      return null;
     }
 
-    /* =========== INSTALL PROMPT =========== */
-    function InstallPrompt({ onDismiss }) {
-      const [isIOS, setIsIOS] = useState(false);
-      const [isAndroid, setIsAndroid] = useState(false);
-      useEffect(function() { var ua = navigator.userAgent || ""; setIsIOS(/iPad|iPhone|iPod/.test(ua)); setIsAndroid(/Android/.test(ua)); }, []);
-      if (!isIOS && !isAndroid) return null;
-      return (
-        <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 390, zIndex: 1000, background: "linear-gradient(to top, #1a2e1a 80%, transparent)", padding: "40px 24px 32px" }}>
-          <div style={{ background: "rgba(134,194,108,0.1)", border: "1px solid rgba(134,194,108,0.25)", borderRadius: 20, padding: 20 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#86c26c" }}>📱 Add StepOut to Your Home Screen</div>
-              <button onClick={onDismiss} style={{ background: "none", border: "none", color: "#5a6a50", fontSize: 18, cursor: "pointer", padding: 0 }}>×</button>
-            </div>
-            {isIOS ? (
-              <div style={{ fontSize: 13, color: "#a8c89a", lineHeight: 1.6 }}>
-                <div style={{ marginBottom: 8 }}><strong style={{ color: "#e8efe4" }}>1.</strong> Tap the Share button 📤 at the bottom</div>
-                <div style={{ marginBottom: 8 }}><strong style={{ color: "#e8efe4" }}>2.</strong> Tap <strong style={{ color: "#e8efe4" }}>Add to Home Screen</strong></div>
-                <div><strong style={{ color: "#e8efe4" }}>3.</strong> Tap <strong style={{ color: "#e8efe4" }}>Add</strong></div>
-              </div>
-            ) : (
-              <div style={{ fontSize: 13, color: "#a8c89a", lineHeight: 1.6 }}>
-                <div style={{ marginBottom: 8 }}><strong style={{ color: "#e8efe4" }}>1.</strong> Tap the menu (three dots) top right</div>
-                <div style={{ marginBottom: 8 }}><strong style={{ color: "#e8efe4" }}>2.</strong> Tap <strong style={{ color: "#e8efe4" }}>Add to Home screen</strong></div>
-                <div><strong style={{ color: "#e8efe4" }}>3.</strong> Tap <strong style={{ color: "#e8efe4" }}>Add</strong></div>
-              </div>
-            )}
-          </div>
-        </div>
+    // Also save to localStorage as fallback
+    try {
+      localStorage.setItem("stepout_data", JSON.stringify(dataToSave));
+    } catch(e) {}
+  }
+
+  /* ── WEATHER: FETCH FROM NOAA ── */
+  function fetchWeather(lat, lon) {
+    fetch("https://api.weather.gov/points/" + lat.toFixed(4) + "," + lon.toFixed(4))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.properties && data.properties.forecastHourly) {
+          setLocationName(data.properties.relativeLocation && data.properties.relativeLocation.properties ? data.properties.relativeLocation.properties.city + ", " + data.properties.relativeLocation.properties.state : "");
+          return fetch(data.properties.forecastHourly);
+        }
+        throw new Error("No forecast URL");
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.properties && data.properties.periods) {
+          var periods = data.properties.periods.slice(0, 11);
+          var hourly = periods.map(function(p) {
+            var d = new Date(p.startTime);
+            var hr = d.getHours();
+            var ampm = hr >= 12 ? "PM" : "AM";
+            var hr12 = hr % 12 || 12;
+            var wi = getWeatherIcon(p.shortForecast);
+            return {
+              time: hr12 + " " + ampm,
+              temp: p.temperature,
+              condition: p.shortForecast,
+              icon: wi.icon,
+              windMph: parseInt(p.windSpeed) || 0,
+              good: wi.good,
+            };
+          });
+          if (hourly.length > 0) setHourlyWeather(hourly);
+        }
+      })
+      .catch(function(e) {
+        console.warn("Weather fetch failed, using mock data:", e);
+      });
+
+    // Also fetch daily forecast
+    fetch("https://api.weather.gov/points/" + lat.toFixed(4) + "," + lon.toFixed(4))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.properties && data.properties.forecast) {
+          return fetch(data.properties.forecast);
+        }
+        throw new Error("No daily forecast URL");
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.properties && data.properties.periods) {
+          var dayPeriods = data.properties.periods.filter(function(p) { return p.isDaytime; }).slice(0, 7);
+          var weekly = dayPeriods.map(function(p, i) {
+            var d = new Date(p.startTime);
+            var wi = getWeatherIcon(p.shortForecast);
+            return {
+              day: d.getDay(),
+              high: p.temperature,
+              low: p.temperature - 15,
+              condition: p.shortForecast,
+              icon: wi.icon,
+              good: wi.good,
+            };
+          });
+          if (weekly.length > 0) setWeeklyWeather(weekly);
+        }
+      })
+      .catch(function(e) {
+        console.warn("Daily forecast failed:", e);
+      });
+  }
+
+  /* ── REQUEST LOCATION ── */
+  function requestLocation() {
+    setLocationStatus("loading");
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        function(pos) {
+          setLocationStatus("granted");
+          saveData({ locationStatus: "granted" });
+          fetchWeather(pos.coords.latitude, pos.coords.longitude);
+        },
+        function(err) {
+          console.warn("Geolocation error:", err);
+          setLocationStatus("denied");
+          saveData({ locationStatus: "denied" });
+        },
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 }
+      );
+    } else {
+      setLocationStatus("denied");
+    }
+  }
+
+  function skipLocation() {
+    setLocationStatus("skipped");
+    saveData({ locationStatus: "skipped" });
+  }
+
+  /* ── AUTO-FETCH WEATHER IF PREVIOUSLY GRANTED ── */
+  useEffect(function() {
+    if (locationStatus === "granted" && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        function(pos) { fetchWeather(pos.coords.latitude, pos.coords.longitude); },
+        function() {},
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 }
       );
     }
+  }, [locationStatus]);
 
-    /* =========== MAIN APP =========== */
-    function StepOutApp({ user, onLogout }) {
-      var today = new Date();
-      var todayIdx = today.getDay();
-      var dayName = FULL_DAYS[todayIdx];
-      var dateStr = today.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+  /* ── LOG ACTIVITY ── */
+  function logActivity(type) {
+    var newLog = Object.assign({}, weekLog);
+    newLog[todayKey] = type;
+    var newMins = weeklyMins + duration;
+    var newStreak = streak + 1;
+    setWeekLog(newLog);
+    setWeeklyMins(newMins);
+    setStreak(newStreak);
+    setMissedWalk(false);
+    setCheckInVisible(false);
+    saveData({ weekLog: newLog, weeklyMins: newMins, streak: newStreak });
+  }
 
-      const [screen, setScreen] = useState("home");
-      const [duration, setDuration] = useState(30);
-      const [selectedSlot, setSelectedSlot] = useState(null);
-      const [indoorActivity, setIndoorActivity] = useState(getRandomActivity());
-      const [showSettings, setShowSettings] = useState(false);
-      const [fadeIn, setFadeIn] = useState(true);
-      const [dailyQuote] = useState(LONGEVITY_QUOTES[Math.floor(Math.random() * LONGEVITY_QUOTES.length)]);
-      const [showInstall, setShowInstall] = useState(false);
-      const [showProfile, setShowProfile] = useState(false);
-      const [streak, setStreak] = useState(0);
-      const [weekLog, setWeekLog] = useState({});
-      const [weeklyMins, setWeeklyMins] = useState(0);
-      const [missedWalk, setMissedWalk] = useState(false);
-      const [hourlyWeather, setHourlyWeather] = useState([]);
-      const [weeklyWeather, setWeeklyWeather] = useState([]);
-      const [weatherLoading, setWeatherLoading] = useState(true);
-      const [locationError, setLocationError] = useState(false);
-      const [scheduledWalk, setScheduledWalk] = useState(null);
-      const [walkScheduled, setWalkScheduled] = useState(false);
-      const [todayLogged, setTodayLogged] = useState(false);
-
-      // Password change state (in-app)
-      const [showPasswordChange, setShowPasswordChange] = useState(false);
-      const [passwordMsg, setPasswordMsg] = useState("");
-      const [passwordErr, setPasswordErr] = useState("");
-
-      async function handleSendPasswordReset() {
-        setPasswordMsg(""); setPasswordErr("");
-        if (user.provider === "google") {
-          setPasswordErr("Your account uses Google Sign-In. To change your password, go to myaccount.google.com");
-          return;
-        }
-        if (firebaseReady && auth && auth.currentUser) {
-          try {
-            await auth.sendPasswordResetEmail(auth.currentUser.email);
-            setPasswordMsg("Password reset email sent to " + auth.currentUser.email + "! Check your inbox.");
-          } catch(e) {
-            setPasswordErr(e.message);
-          }
-        } else {
-          setPasswordErr("Unable to send reset email. Try signing out and using Forgot Password on the login screen.");
-        }
-      }
-
-      useEffect(function() { if (weekLog[todayIdx]) setTodayLogged(true); }, [weekLog]);
-
-      useEffect(function() {
-        var dismissed = localStorage.getItem("stepout_install_dismissed");
-        if (!dismissed) { var timer = setTimeout(function() { setShowInstall(true); }, 5000); return function() { clearTimeout(timer); }; }
-      }, []);
-
-      useEffect(function() {
-        async function loadData() {
-          var data = null;
-          if (user.provider !== "offline") data = await loadUserData(user.uid);
-          if (!data) { var local = localStorage.getItem("stepout_data_" + user.uid); if (local) data = JSON.parse(local); }
-          if (data) {
-            if (data.streak) setStreak(data.streak);
-            if (data.weekLog) setWeekLog(data.weekLog);
-            if (data.weeklyMins) setWeeklyMins(data.weeklyMins);
-            if (data.duration) setDuration(data.duration);
-            if (data.scheduledWalk) setScheduledWalk(data.scheduledWalk);
-            if (data.walkScheduled) setWalkScheduled(data.walkScheduled);
-          }
-        }
-        loadData();
-      }, [user]);
-
-      useEffect(function() {
-        var data = { streak: streak, weekLog: weekLog, weeklyMins: weeklyMins, duration: duration, scheduledWalk: scheduledWalk, walkScheduled: walkScheduled, lastUpdated: new Date().toISOString() };
-        localStorage.setItem("stepout_data_" + user.uid, JSON.stringify(data));
-        if (user.provider !== "offline") saveUserData(user.uid, data);
-      }, [streak, weekLog, weeklyMins, duration, scheduledWalk, walkScheduled]);
-
-      useEffect(function() {
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            async function(pos) {
-              var lat = pos.coords.latitude.toFixed(4); var lon = pos.coords.longitude.toFixed(4);
-              var wd = await fetchWeather(lat, lon);
-              if (wd && wd.hourly) {
-                var now = new Date(); var periods = wd.hourly.properties.periods || [];
-                var th = periods.filter(function(p) { var d = new Date(p.startTime); return d.getDate() === now.getDate() && d.getHours() >= 7 && d.getHours() <= 17; }).map(function(p) {
-                  return { time: new Date(p.startTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }), temp: p.temperature, condition: p.shortForecast, icon: getWeatherIcon(p.shortForecast), windMph: p.windSpeed ? parseInt(p.windSpeed) : 0, good: isGoodWeather(p.shortForecast) };
-                });
-                setHourlyWeather(th.length > 0 ? th : getMockHourly());
-              } else setHourlyWeather(getMockHourly());
-              if (wd && wd.forecast) {
-                var fp = wd.forecast.properties.periods || [];
-                var days = fp.filter(function(p) { return p.isDaytime; }).slice(0, 7).map(function(p, i) {
-                  return { day: (todayIdx + i) % 7, high: p.temperature, low: fp[i*2+1] ? fp[i*2+1].temperature : p.temperature - 15, condition: p.shortForecast, icon: getWeatherIcon(p.shortForecast), good: isGoodWeather(p.shortForecast) };
-                });
-                setWeeklyWeather(days.length > 0 ? days : getMockWeekly());
-              } else setWeeklyWeather(getMockWeekly());
-              setWeatherLoading(false);
-            },
-            function() { setLocationError(true); setHourlyWeather(getMockHourly()); setWeeklyWeather(getMockWeekly()); setWeatherLoading(false); },
-            { timeout: 10000 }
-          );
-        } else { setHourlyWeather(getMockHourly()); setWeeklyWeather(getMockWeekly()); setWeatherLoading(false); }
-      }, []);
-
-      function getMockHourly() {
-        return [
-          { time: "7 AM", temp: 52, condition: "Partly Cloudy", icon: "⛅", windMph: 4, good: true },
-          { time: "8 AM", temp: 55, condition: "Sunny", icon: "☀️", windMph: 3, good: true },
-          { time: "9 AM", temp: 59, condition: "Sunny", icon: "☀️", windMph: 5, good: true },
-          { time: "10 AM", temp: 63, condition: "Sunny", icon: "☀️", windMph: 6, good: true },
-          { time: "11 AM", temp: 66, condition: "Partly Cloudy", icon: "⛅", windMph: 8, good: true },
-          { time: "12 PM", temp: 68, condition: "Cloudy", icon: "☁️", windMph: 10, good: true },
-          { time: "1 PM", temp: 67, condition: "Rain", icon: "🌧️", windMph: 15, good: false },
-          { time: "2 PM", temp: 64, condition: "Rain", icon: "🌧️", windMph: 18, good: false },
-          { time: "3 PM", temp: 62, condition: "Cloudy", icon: "☁️", windMph: 12, good: true },
-          { time: "4 PM", temp: 60, condition: "Partly Cloudy", icon: "⛅", windMph: 7, good: true },
-          { time: "5 PM", temp: 57, condition: "Clear", icon: "🌅", windMph: 4, good: true },
-        ];
-      }
-      function getMockWeekly() {
-        return [
-          { day: 0, high: 62, low: 45, condition: "Sunny", icon: "☀️", good: true },
-          { day: 1, high: 58, low: 42, condition: "Partly Cloudy", icon: "⛅", good: true },
-          { day: 2, high: 55, low: 40, condition: "Rain", icon: "🌧️", good: false },
-          { day: 3, high: 50, low: 38, condition: "Thunderstorms", icon: "⛈️", good: false },
-          { day: 4, high: 60, low: 43, condition: "Cloudy", icon: "☁️", good: true },
-          { day: 5, high: 65, low: 47, condition: "Sunny", icon: "☀️", good: true },
-          { day: 6, high: 63, low: 46, condition: "Partly Cloudy", icon: "⛅", good: true },
-        ];
-      }
-
-      var suggestions = hourlyWeather.filter(function(w) { return w.good; }).map(function(w) {
-        return { time: w.time, weather: w, score: w.condition.includes("Sunny") ? 3 : 2, isOutdoor: true };
-      }).concat(hourlyWeather.filter(function(w) { return !w.good; }).map(function(w) {
-        return { time: w.time, weather: w, score: 0, isOutdoor: false };
-      })).sort(function(a, b) { return b.score - a.score; });
-      var bestOutdoor = suggestions.find(function(s) { return s.isOutdoor; });
-
-      useEffect(function() { setFadeIn(false); var t = setTimeout(function() { setFadeIn(true); }, 50); return function() { clearTimeout(t); }; }, [screen]);
-
-      var streakMsg = (STREAK_MESSAGES.find(function(s) { return streak >= s.min && streak <= s.max; }) || {}).msg || "";
-      var currentMilestone = HEALTH_MILESTONES.slice().reverse().find(function(m) { return weeklyMins >= m.mins; });
-      var nextMilestone = HEALTH_MILESTONES.find(function(m) { return m.mins > weeklyMins; });
-      var daysCompleted = Object.keys(weekLog).length;
-      var progressPct = Math.round((daysCompleted / 7) * 100);
-
-      function logActivity(type) {
-        var newLog = Object.assign({}, weekLog); newLog[todayIdx] = type; setWeekLog(newLog);
-        setWeeklyMins(function(prev) { return prev + duration; });
-        setStreak(function(prev) { return prev + 1; });
-        setMissedWalk(false); setTodayLogged(true);
-      }
-
-      function scheduleWalkToCalendar(slot) {
-        var now = new Date(); var timeParts = slot.time.match(/(\d+)/); var hour = parseInt(timeParts[1]);
-        var isPM = slot.time.toLowerCase().includes("pm"); var hour24 = isPM && hour !== 12 ? hour + 12 : hour;
-        if (!isPM && hour === 12) hour24 = 0;
-        var start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour24, 0);
-        var end = new Date(start.getTime() + duration * 60000);
-        function fmt(d) { return d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'; }
-        window.open("https://calendar.google.com/calendar/render?action=TEMPLATE&text=" + encodeURIComponent(duration + "-Min StepOut Walk") + "&dates=" + fmt(start) + "/" + fmt(end) + "&details=" + encodeURIComponent("Your scheduled StepOut Daily walk!"), '_blank');
-        setScheduledWalk({ time: slot.time }); setWalkScheduled(true);
-      }
-
-      var pillStyle = function(active) { return { flex: 1, padding: "12px 0", borderRadius: 12, border: "none", cursor: "pointer", fontSize: 15, fontWeight: 600, fontFamily: "inherit", background: active ? "#86c26c" : "rgba(255,255,255,0.06)", color: active ? "#0a160a" : "#8a9a7e" }; };
-      var cardStyle = { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: "16px 18px" };
-
-      return (
-        <div style={{...pageWrap, position: "relative", overflow: "hidden" }}>
-          <link href={fontLink} rel="stylesheet" />
-          <div style={{ position: "absolute", top: -80, right: -80, width: 260, height: 260, background: "radial-gradient(circle, rgba(134,194,108,0.12) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" }} />
-          <div style={{ position: "absolute", bottom: 100, left: -60, width: 200, height: 200, background: "radial-gradient(circle, rgba(194,168,108,0.08) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" }} />
-
-          <div style={{ opacity: fadeIn ? 1 : 0, transition: "opacity 0.3s ease", padding: "0 0 100px 0" }}>
-
-            {/* HOME */}
-            {screen === "home" && (
-              <div style={{ padding: "56px 24px 24px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
-                  <div>
-                    <div style={{ fontSize: 13, letterSpacing: 2.5, textTransform: "uppercase", color: "#86c26c", fontWeight: 600, marginBottom: 4 }}>{dayName}</div>
-                    <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 34, fontWeight: 700, margin: 0, lineHeight: 1.1, color: "#f0f7ec" }}>Step<span style={{ color: "#86c26c" }}>Out</span></h1>
-                    <div style={{ fontSize: 14, color: "#8a9a7e", marginTop: 4 }}>{dateStr}</div>
-                  </div>
-                  <button onClick={function() { setShowProfile(!showProfile); }} style={{ background: "rgba(134,194,108,0.1)", border: "1px solid rgba(134,194,108,0.2)", borderRadius: 12, width: 42, height: 42, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16, marginTop: 4, color: "#86c26c" }}>{user.name ? user.name.charAt(0).toUpperCase() : "👤"}</button>
-                </div>
-
-                {/* PROFILE DROPDOWN */}
-                {showProfile && (
-                  <div style={{ background: "rgba(20,35,20,0.95)", border: "1px solid rgba(134,194,108,0.2)", borderRadius: 16, padding: 18, marginBottom: 20, boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
-                    <div style={{ fontSize: 15, fontWeight: 600, color: "#e8efe4", marginBottom: 4 }}>{user.name || "User"}</div>
-                    <div style={{ fontSize: 12, color: "#6b7a60", marginBottom: 4 }}>{user.email}</div>
-                    <div style={{ fontSize: 11, color: "#5a6a50", marginBottom: 14 }}>Signed in with {user.provider === "google" ? "Google" : "Email"}</div>
-
-                    <button onClick={function() { setShowSettings(!showSettings); }} style={{ width: "100%", padding: "10px 0", borderRadius: 10, cursor: "pointer", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#a8c89a", fontSize: 13, fontWeight: 600, fontFamily: "inherit", marginBottom: 8 }}>⚙️ Walk Settings</button>
-
-                    {/* CHANGE PASSWORD BUTTON */}
-                    <button onClick={function() { setShowPasswordChange(!showPasswordChange); setPasswordMsg(""); setPasswordErr(""); }} style={{ width: "100%", padding: "10px 0", borderRadius: 10, cursor: "pointer", background: "rgba(194,168,108,0.08)", border: "1px solid rgba(194,168,108,0.15)", color: "#c2a86c", fontSize: 13, fontWeight: 600, fontFamily: "inherit", marginBottom: 8 }}>🔑 Change Password</button>
-
-                    <button onClick={onLogout} style={{ width: "100%", padding: "10px 0", borderRadius: 10, cursor: "pointer", background: "rgba(194,108,108,0.1)", border: "1px solid rgba(194,108,108,0.2)", color: "#c27060", fontSize: 13, fontWeight: 600, fontFamily: "inherit" }}>Sign Out</button>
-
-                    {/* PASSWORD CHANGE PANEL */}
-                    {showPasswordChange && (
-                      <div style={{ marginTop: 14, padding: 16, borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                        {user.provider === "google" ? (
-                          <div>
-                            <div style={{ fontSize: 13, color: "#c2a86c", marginBottom: 8 }}>Your account uses Google Sign-In.</div>
-                            <div style={{ fontSize: 12, color: "#8a9a7e", lineHeight: 1.5, marginBottom: 12 }}>To change your password, visit your Google Account settings at myaccount.google.com</div>
-                            <button onClick={function() { window.open("https://myaccount.google.com/security", "_blank"); }} style={{ width: "100%", padding: "10px 0", borderRadius: 10, cursor: "pointer", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#a8c89a", fontSize: 12, fontWeight: 600, fontFamily: "inherit" }}>Open Google Account Settings</button>
-                          </div>
-                        ) : (
-                          <div>
-                            <div style={{ fontSize: 13, color: "#e8efe4", marginBottom: 8 }}>We will send a password reset link to:</div>
-                            <div style={{ fontSize: 14, color: "#86c26c", fontWeight: 600, marginBottom: 12 }}>{user.email}</div>
-                            {passwordErr && <div style={{ color: "#e07060", fontSize: 12, marginBottom: 8, padding: "8px 12px", background: "rgba(224,112,96,0.1)", borderRadius: 8 }}>{passwordErr}</div>}
-                            {passwordMsg && <div style={{ color: "#86c26c", fontSize: 12, marginBottom: 8, padding: "8px 12px", background: "rgba(134,194,108,0.1)", borderRadius: 8 }}>{passwordMsg}</div>}
-                            <button onClick={handleSendPasswordReset} style={{ width: "100%", padding: "10px 0", borderRadius: 10, cursor: "pointer", background: "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)", border: "none", color: "#0a160a", fontSize: 13, fontWeight: 700, fontFamily: "inherit" }}>Send Reset Email</button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {showSettings && (
-                  <div style={{ background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)", borderRadius: 16, padding: 20, marginBottom: 20 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#86c26c", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 14 }}>Walk Duration</div>
-                    <div style={{ display: "flex", gap: 10 }}>
-                      {[20, 30, 60].map(function(d) { return <button key={d} onClick={function() { setDuration(d); }} style={pillStyle(duration === d)}>{d} min</button>; })}
-                    </div>
-                    <div style={{ fontSize: 12, color: "#6b7a60", marginTop: 10 }}>Currently set to {duration}-minute walks</div>
-                  </div>
-                )}
-
-                {/* WALK CHECK-IN BANNER */}
-                {walkScheduled && !todayLogged && (
-                  <div style={{ background: "linear-gradient(135deg, rgba(134,194,108,0.12) 0%, rgba(134,194,108,0.04) 100%)", border: "1px solid rgba(134,194,108,0.3)", borderRadius: 20, padding: 22, marginBottom: 20, boxShadow: "0 4px 24px rgba(0,0,0,0.2)" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(134,194,108,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🔔</div>
-                      <div><div style={{ fontSize: 11, color: "#6b7a60", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" }}>Walk Check-in</div><div style={{ fontSize: 12, color: "#8a9a7e" }}>Scheduled for {scheduledWalk ? scheduledWalk.time : "today"}</div></div>
-                    </div>
-                    <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 18, fontWeight: 700, color: "#f0f7ec", lineHeight: 1.3, marginBottom: 6 }}>Did you complete your walk?</div>
-                    <div style={{ fontSize: 14, color: "#8a9a7e", marginBottom: 18, lineHeight: 1.4 }}>Let us know so we can keep your streak going.</div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      <button onClick={function() { logActivity("walk"); setScreen("checkin_done"); }} style={{ width: "100%", padding: "14px 0", borderRadius: 12, border: "none", cursor: "pointer", background: "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)", color: "#0a160a", fontSize: 15, fontWeight: 700, fontFamily: "inherit" }}>✅ Yes, I walked!</button>
-                      <button onClick={function() { setIndoorActivity(getRandomActivity()); setScreen("indoor"); }} style={{ width: "100%", padding: "14px 0", borderRadius: 12, cursor: "pointer", background: "rgba(194,140,108,0.12)", border: "1px solid rgba(194,140,108,0.25)", color: "#c2946c", fontSize: 14, fontWeight: 600, fontFamily: "inherit" }}>🏠 No, but I'll do an indoor activity</button>
-                      <button onClick={function() { setMissedWalk(true); setWalkScheduled(false); }} style={{ width: "100%", padding: "12px 0", borderRadius: 12, cursor: "pointer", background: "none", border: "1px solid rgba(255,255,255,0.08)", color: "#5a6a50", fontSize: 13, fontWeight: 500, fontFamily: "inherit" }}>Skip today</button>
-                    </div>
-                    <div style={{ marginTop: 14, padding: "10px 12px", borderRadius: 10, background: "rgba(255,160,60,0.06)", border: "1px solid rgba(255,160,60,0.1)", display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 16 }}>🔥</span><div style={{ fontSize: 12, color: "#c49a5c" }}>You are on a {streak}-day streak!</div>
-                    </div>
-                  </div>
-                )}
-
-                {/* STREAK + PROGRESS */}
-                <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
-                  <div style={{ flex: 1, background: "linear-gradient(135deg, rgba(255,160,60,0.12) 0%, rgba(255,120,20,0.05) 100%)", border: "1px solid rgba(255,160,60,0.2)", borderRadius: 16, padding: "16px 14px", textAlign: "center" }}>
-                    <div style={{ fontSize: 32, marginBottom: 2 }}>🔥</div>
-                    <div style={{ fontSize: 28, fontWeight: 700, color: "#ffa03c", fontFamily: "'Playfair Display', serif" }}>{streak}</div>
-                    <div style={{ fontSize: 11, color: "#c49a5c", fontWeight: 600 }}>Day Streak</div>
-                  </div>
-                  <div style={{ flex: 2, background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)", borderRadius: 16, padding: "14px 16px" }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7a60", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 10 }}>This Week</div>
-                    <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-                      {DAYS.map(function(d, i) {
-                        var status = weekLog[i]; var isToday = i === todayIdx;
-                        return (<div key={i} style={{ flex: 1, textAlign: "center" }}><div style={{ fontSize: 10, color: isToday ? "#86c26c" : "#5a6a50", marginBottom: 4, fontWeight: isToday ? 700 : 400 }}>{d}</div><div style={{ width: 28, height: 28, borderRadius: "50%", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, background: status === "walk" ? "rgba(134,194,108,0.25)" : status === "indoor" ? "rgba(194,168,108,0.25)" : isToday ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)", border: isToday ? "2px solid #86c26c" : "1px solid rgba(255,255,255,0.06)" }}>{status === "walk" ? "🚶" : status === "indoor" ? "🏠" : ""}</div></div>);
-                      })}
-                    </div>
-                    <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}><div style={{ height: "100%", width: progressPct + "%", borderRadius: 3, background: "linear-gradient(90deg, #86c26c, #a8d98a)" }} /></div>
-                    <div style={{ fontSize: 11, color: "#6b7a60", marginTop: 6 }}>{daysCompleted}/7 days active</div>
-                  </div>
-                </div>
-
-                <div style={{ background: "rgba(255,160,60,0.06)", border: "1px solid rgba(255,160,60,0.12)", borderRadius: 12, padding: "10px 14px", marginBottom: 20, textAlign: "center" }}>
-                  <div style={{ fontSize: 13, color: "#d4a860", fontStyle: "italic", fontFamily: "'Playfair Display', serif" }}>"{streakMsg}"</div>
-                </div>
-
-                <div style={{ background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)", borderRadius: 16, padding: 18, marginBottom: 20 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: "#86c26c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>🧬 Your Longevity Impact This Week</div>
-                  <div style={{ fontSize: 26, fontWeight: 700, color: "#e8efe4", fontFamily: "'Playfair Display', serif" }}>{weeklyMins} minutes</div>
-                  {currentMilestone && <div style={{ fontSize: 13, color: "#a8c89a", marginTop: 4 }}>✅ {currentMilestone.label}</div>}
-                  {nextMilestone && <div style={{ fontSize: 12, color: "#6b7a60", marginTop: 6 }}>Next: {nextMilestone.mins} min — {nextMilestone.mins - weeklyMins} to go</div>}
-                </div>
-
-                {missedWalk && (
-                  <div style={{ background: "linear-gradient(135deg, rgba(194,140,108,0.12) 0%, rgba(194,108,108,0.06) 100%)", border: "1px solid rgba(194,140,108,0.25)", borderRadius: 16, padding: 18, marginBottom: 20 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#c2946c", marginBottom: 6 }}>☀️ You missed your walk — no worries!</div>
-                    <div style={{ fontSize: 13, color: "#a89070", lineHeight: 1.5, marginBottom: 14 }}>A quick indoor activity counts just as much.</div>
-                    <button onClick={function() { setIndoorActivity(getRandomActivity()); setScreen("indoor"); }} style={{ width: "100%", padding: "14px 0", borderRadius: 12, border: "none", cursor: "pointer", background: "linear-gradient(135deg, #c2946c 0%, #a87d52 100%)", color: "#1a1008", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>🏠 Do an Indoor Activity Instead</button>
-                  </div>
-                )}
-
-                <div style={{ background: "rgba(194,168,108,0.08)", border: "1px solid rgba(194,168,108,0.15)", borderRadius: 16, padding: 18, marginBottom: 20 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: "#c2a86c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>💡 Daily Longevity Insight</div>
-                  <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontStyle: "italic", fontSize: 14.5, lineHeight: 1.5, color: "#d4c9a8" }}>"{dailyQuote}"</div>
-                </div>
-
-                <div style={{ marginBottom: 24 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#6b7a60", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 14 }}>{weatherLoading ? "Loading Weather..." : locationError ? "Today's Weather (sample)" : "Today's Weather"}</div>
-                  <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 8, scrollbarWidth: "none" }}>
-                    {hourlyWeather.map(function(w, i) {
-                      return (<div key={i} style={{ minWidth: 62, padding: "10px 6px", borderRadius: 14, textAlign: "center", background: w.good ? "rgba(134,194,108,0.08)" : "rgba(194,108,108,0.08)", border: "1px solid " + (w.good ? "rgba(134,194,108,0.15)" : "rgba(194,108,108,0.15)") }}><div style={{ fontSize: 10, color: "#8a9a7e", marginBottom: 4 }}>{w.time}</div><div style={{ fontSize: 20, marginBottom: 2 }}>{w.icon}</div><div style={{ fontSize: 13, fontWeight: 600, color: "#e8efe4" }}>{w.temp}°</div></div>);
-                    })}
-                  </div>
-                  {locationError && <div style={{ fontSize: 11, color: "#6b7a60", marginTop: 8 }}>📍 Allow location access for your real local weather</div>}
-                </div>
-
-                {bestOutdoor && (
-                  <div style={{ marginBottom: 20 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#6b7a60", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 14 }}>⭐ Best Time to Walk</div>
-                    <button onClick={function() { setSelectedSlot(bestOutdoor); setScreen("detail"); }} style={{ width: "100%", background: "linear-gradient(135deg, rgba(134,194,108,0.15) 0%, rgba(134,194,108,0.05) 100%)", border: "1px solid rgba(134,194,108,0.3)", borderRadius: 20, padding: 22, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div><div style={{ fontSize: 28, fontWeight: 700, color: "#86c26c", fontFamily: "'Playfair Display', serif" }}>{bestOutdoor.time}</div><div style={{ fontSize: 14, color: "#b0c4a4", marginTop: 4 }}>{bestOutdoor.weather.icon} {bestOutdoor.weather.temp}° · {bestOutdoor.weather.condition} · {duration} min walk</div></div>
-                        <div style={{ fontSize: 28, opacity: 0.6 }}>→</div>
-                      </div>
-                    </button>
-                  </div>
-                )}
-
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#6b7a60", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 14 }}>All Available Slots</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {suggestions.slice(0, 6).map(function(s, i) {
-                      return (<button key={i} onClick={function() { if (s.isOutdoor) { setSelectedSlot(s); setScreen("detail"); } else { setIndoorActivity(getRandomActivity()); setScreen("indoor"); } }} style={{ width: "100%", background: cardStyle.background, border: cardStyle.border, borderRadius: cardStyle.borderRadius, padding: cardStyle.padding, cursor: "pointer", textAlign: "left", fontFamily: "inherit", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}><span style={{ fontSize: 22 }}>{s.weather.icon}</span><div><div style={{ fontSize: 15, fontWeight: 600, color: "#e8efe4" }}>{s.time}</div><div style={{ fontSize: 12, color: "#8a9a7e" }}>{s.weather.temp}° · {s.weather.condition}</div></div></div>
-                        <div style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, background: s.isOutdoor ? "rgba(134,194,108,0.15)" : "rgba(194,140,108,0.15)", color: s.isOutdoor ? "#86c26c" : "#c2946c" }}>{s.isOutdoor ? "Walk" : "Indoor"}</div>
-                      </button>);
-                    })}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* DETAIL */}
-            {screen === "detail" && selectedSlot && (
-              <div style={{ padding: "56px 24px 24px" }}>
-                <button onClick={function() { setScreen("home"); }} style={backBtn}>← Back</button>
-                <div style={{ textAlign: "center", padding: "32px 0 24px" }}>
-                  <div style={{ fontSize: 56, marginBottom: 12 }}>{selectedSlot.weather.icon}</div>
-                  <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 32, fontWeight: 700, margin: 0, color: "#f0f7ec" }}>{selectedSlot.time}</h2>
-                  <div style={{ fontSize: 16, color: "#8a9a7e", marginTop: 8 }}>{selectedSlot.weather.temp}° · {selectedSlot.weather.condition} · Wind {selectedSlot.weather.windMph} mph</div>
-                </div>
-                <div style={{ background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)", borderRadius: 20, padding: 24, marginBottom: 24 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-                    <div><div style={{ fontSize: 12, color: "#6b7a60", textTransform: "uppercase" }}>Duration</div><div style={{ fontSize: 20, fontWeight: 700, color: "#e8efe4" }}>{duration} min</div></div>
-                    <div style={{ textAlign: "right" }}><div style={{ fontSize: 12, color: "#6b7a60", textTransform: "uppercase" }}>Type</div><div style={{ fontSize: 20, fontWeight: 700, color: "#86c26c" }}>Outdoor</div></div>
-                  </div>
-                  <div style={{ height: 1, background: "rgba(134,194,108,0.15)", margin: "0 0 16px" }} />
-                  <div style={{ fontSize: 13, color: "#8a9a7e", lineHeight: 1.5 }}>🌿 Perfect conditions. {selectedSlot.weather.temp < 60 ? "Consider a light jacket." : "Enjoy the warmth!"} Remember to hydrate.</div>
-                </div>
-                <div style={{ background: "rgba(255,160,60,0.06)", border: "1px solid rgba(255,160,60,0.12)", borderRadius: 12, padding: "12px 16px", marginBottom: 20, display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 28 }}>🔥</span><div><div style={{ fontSize: 14, fontWeight: 700, color: "#ffa03c" }}>Keep your {streak}-day streak alive!</div><div style={{ fontSize: 12, color: "#a08050" }}>Complete this walk to extend to {streak + 1} days</div></div>
-                </div>
-                {todayLogged ? (
-                  <div style={{ background: "rgba(134,194,108,0.1)", border: "1px solid rgba(134,194,108,0.3)", borderRadius: 16, padding: 20, textAlign: "center" }}>
-                    <div style={{ fontSize: 36, marginBottom: 8 }}>✅</div><div style={{ fontSize: 17, fontWeight: 700, color: "#86c26c" }}>Already Logged Today!</div><div style={{ fontSize: 14, fontWeight: 600, color: "#ffa03c", marginTop: 10 }}>🔥 Streak: {streak} days!</div>
-                  </div>
-                ) : (
-                  <div>
-                    <button onClick={function() { scheduleWalkToCalendar(selectedSlot); }} style={{ width: "100%", padding: "18px 0", borderRadius: 16, border: "none", background: walkScheduled ? "rgba(134,194,108,0.15)" : "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)", color: walkScheduled ? "#86c26c" : "#0a160a", fontSize: 17, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", boxShadow: walkScheduled ? "none" : "0 4px 24px rgba(134,194,108,0.3)", marginBottom: 10 }}>
-                      {walkScheduled ? "✅ Scheduled — Added to Calendar" : "📅 Schedule Walk (Add to Calendar)"}
-                    </button>
-                    <button onClick={function() { logActivity("walk"); setScreen("checkin_done"); }} style={{ width: "100%", padding: "16px 0", borderRadius: 14, cursor: "pointer", background: "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)", border: "none", color: "#0a160a", fontSize: 15, fontWeight: 700, fontFamily: "inherit" }}>✅ I Did This Walk — Log It</button>
-                    <div style={{ fontSize: 11, color: "#5a6a50", textAlign: "center", marginTop: 10 }}>Scheduling adds to calendar. Logging confirms you did it.</div>
-                  </div>
-                )}
-                <div style={{ marginTop: 24, background: "rgba(194,168,108,0.08)", border: "1px solid rgba(194,168,108,0.15)", borderRadius: 16, padding: 18 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: "#c2a86c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>🧬 Longevity Tip</div>
-                  <div style={{ fontSize: 13.5, lineHeight: 1.55, color: "#d4c9a8" }}>Walking outdoors in natural light helps regulate your circadian rhythm, which governs hormone production and cellular repair.</div>
-                </div>
-              </div>
-            )}
-
-            {/* INDOOR */}
-            {screen === "indoor" && (
-              <div style={{ padding: "56px 24px 24px" }}>
-                <button onClick={function() { setScreen("home"); }} style={backBtn}>← Back</button>
-                <div style={{ textAlign: "center", padding: "20px 0 28px" }}>
-                  <div style={{ fontSize: 12, letterSpacing: 2.5, textTransform: "uppercase", color: "#c2946c", fontWeight: 600, marginBottom: 12 }}>🌧️ Stay Active Indoors</div>
-                  <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, margin: 0, color: "#f0f7ec" }}>Indoor Activity</h2>
-                </div>
-                <div style={{ background: "rgba(255,160,60,0.06)", border: "1px solid rgba(255,160,60,0.12)", borderRadius: 12, padding: "12px 16px", marginBottom: 20, display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 28 }}>🔥</span><div><div style={{ fontSize: 14, fontWeight: 700, color: "#ffa03c" }}>Indoor days count too!</div><div style={{ fontSize: 12, color: "#a08050" }}>Keep your {streak}-day streak going</div></div>
-                </div>
-                <div style={{ background: "linear-gradient(135deg, rgba(194,140,108,0.1) 0%, rgba(194,140,108,0.03) 100%)", border: "1px solid rgba(194,140,108,0.2)", borderRadius: 24, padding: 28, textAlign: "center", marginBottom: 20 }}>
-                  <div style={{ fontSize: 52, marginBottom: 12 }}>{indoorActivity.icon}</div>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: "#e8efe4", marginBottom: 6, fontFamily: "'Playfair Display', serif" }}>{indoorActivity.name}</div>
-                  <div style={{ display: "inline-block", fontSize: 12, fontWeight: 600, padding: "4px 12px", borderRadius: 8, background: "rgba(194,140,108,0.15)", color: "#c2946c" }}>~{indoorActivity.duration} · No equipment</div>
-                  <div style={{ marginTop: 16, padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", textAlign: "left" }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: "#c2946c", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6 }}>How To Do It</div>
-                    <div style={{ fontSize: 13.5, lineHeight: 1.6, color: "#b0bca4" }}>{indoorActivity.howTo}</div>
-                  </div>
-                </div>
-                <div style={{ background: "rgba(194,168,108,0.08)", border: "1px solid rgba(194,168,108,0.15)", borderRadius: 16, padding: 18, marginBottom: 20 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: "#c2a86c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>🧬 Why This Matters</div>
-                  <div style={{ fontSize: 13.5, lineHeight: 1.6, color: "#d4c9a8" }}>{indoorActivity.tip}</div>
-                </div>
-                <button onClick={function() { setIndoorActivity(getRandomActivity()); }} style={{ width: "100%", padding: "16px 0", borderRadius: 14, cursor: "pointer", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#e8efe4", fontSize: 15, fontWeight: 600, fontFamily: "inherit", marginBottom: 10 }}>🔄 Give Me a Different Activity</button>
-                <button onClick={function() { logActivity("indoor"); setScreen("indoor_done"); }} style={{ width: "100%", padding: "16px 0", borderRadius: 14, cursor: "pointer", background: "linear-gradient(135deg, #c2946c 0%, #a87d52 100%)", border: "none", color: "#1a1008", fontSize: 15, fontWeight: 700, fontFamily: "inherit" }}>✅ I Did This — Log It</button>
-              </div>
-            )}
-
-            {/* INDOOR DONE */}
-            {screen === "indoor_done" && (
-              <div style={{ padding: "56px 24px 24px", textAlign: "center" }}>
-                <div style={{ fontSize: 64, marginBottom: 16, marginTop: 40 }}>🎉</div>
-                <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, margin: "0 0 8px", color: "#f0f7ec" }}>Nice Work!</h2>
-                <div style={{ fontSize: 16, color: "#8a9a7e", marginBottom: 24 }}>Your streak lives on.</div>
-                <div style={{ background: "rgba(255,160,60,0.1)", border: "1px solid rgba(255,160,60,0.2)", borderRadius: 20, padding: 24, marginBottom: 24 }}>
-                  <div style={{ fontSize: 42, fontWeight: 700, color: "#ffa03c", fontFamily: "'Playfair Display', serif" }}>🔥 {streak} days</div>
-                  <div style={{ fontSize: 14, color: "#c49a5c", marginTop: 4 }}>{(STREAK_MESSAGES.find(function(s) { return streak >= s.min && streak <= s.max; }) || {}).msg}</div>
-                </div>
-                <div style={{ background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)", borderRadius: 16, padding: 18, marginBottom: 24, textAlign: "left" }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: "#86c26c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>Weekly Total</div>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: "#e8efe4", fontFamily: "'Playfair Display', serif" }}>{weeklyMins} minutes</div>
-                  {currentMilestone && <div style={{ fontSize: 13, color: "#a8c89a", marginTop: 4 }}>✅ {currentMilestone.label}</div>}
-                </div>
-                <button onClick={function() { setScreen("home"); }} style={{ width: "100%", padding: "16px 0", borderRadius: 14, cursor: "pointer", background: "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)", border: "none", color: "#0a160a", fontSize: 15, fontWeight: 700, fontFamily: "inherit" }}>← Back to Home</button>
-              </div>
-            )}
-
-            {/* CHECKIN DONE */}
-            {screen === "checkin_done" && (
-              <div style={{ padding: "56px 24px 24px", textAlign: "center" }}>
-                <div style={{ fontSize: 64, marginBottom: 16, marginTop: 40 }}>🚶‍♀️</div>
-                <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, margin: "0 0 8px", color: "#f0f7ec" }}>Way to Go!</h2>
-                <div style={{ fontSize: 16, color: "#8a9a7e", marginBottom: 8 }}>Walk logged — {duration} minutes in the books.</div>
-                <div style={{ background: "rgba(255,160,60,0.1)", border: "1px solid rgba(255,160,60,0.2)", borderRadius: 20, padding: 24, marginBottom: 20, marginTop: 24 }}>
-                  <div style={{ fontSize: 42, fontWeight: 700, color: "#ffa03c", fontFamily: "'Playfair Display', serif" }}>🔥 {streak} days</div>
-                  <div style={{ fontSize: 14, color: "#c49a5c", marginTop: 4 }}>{(STREAK_MESSAGES.find(function(s) { return streak >= s.min && streak <= s.max; }) || {}).msg}</div>
-                </div>
-                <div style={{ background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)", borderRadius: 16, padding: 18, marginBottom: 20, textAlign: "left" }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: "#86c26c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>Weekly Total</div>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: "#e8efe4", fontFamily: "'Playfair Display', serif" }}>{weeklyMins} minutes</div>
-                  {currentMilestone && <div style={{ fontSize: 13, color: "#a8c89a", marginTop: 4 }}>✅ {currentMilestone.label}</div>}
-                  {nextMilestone && <div style={{ fontSize: 12, color: "#6b7a60", marginTop: 6 }}>Next: {nextMilestone.mins} min — {nextMilestone.mins - weeklyMins} to go</div>}
-                </div>
-                <button onClick={function() { setScreen("home"); }} style={{ width: "100%", padding: "16px 0", borderRadius: 14, cursor: "pointer", background: "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)", border: "none", color: "#0a160a", fontSize: 15, fontWeight: 700, fontFamily: "inherit" }}>← Back to Home</button>
-              </div>
-            )}
-
-            {/* WEEKLY PLAN */}
-            {screen === "week" && (
-              <div style={{ padding: "56px 24px 24px" }}>
-                <div style={{ marginBottom: 24 }}>
-                  <div style={{ fontSize: 13, letterSpacing: 2.5, textTransform: "uppercase", color: "#86c26c", fontWeight: 600, marginBottom: 4 }}>Plan Ahead</div>
-                  <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, margin: 0, color: "#f0f7ec" }}>Your Week</h2>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {weeklyWeather.map(function(w, idx) {
-                    var isToday = idx === 0; var logged = weekLog[(todayIdx + idx) % 7];
-                    return (
-                      <div key={idx} style={{ background: isToday ? "rgba(134,194,108,0.08)" : "rgba(255,255,255,0.03)", border: isToday ? "1px solid rgba(134,194,108,0.25)" : "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: "16px 18px" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                            <div style={{ textAlign: "center", minWidth: 44 }}><div style={{ fontSize: 24 }}>{w.icon}</div><div style={{ fontSize: 11, color: "#6b7a60", marginTop: 2 }}>{w.high}°/{w.low}°</div></div>
-                            <div><div style={{ fontSize: 15, fontWeight: 600, color: "#e8efe4" }}>{isToday ? "Today" : FULL_DAYS[(todayIdx + idx) % 7]}</div><div style={{ fontSize: 12, color: "#8a9a7e" }}>{w.condition}</div></div>
-                          </div>
-                          {logged ? <div style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, background: "rgba(134,194,108,0.2)", color: "#86c26c" }}>✓ Done</div> : w.good ? <div style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, background: "rgba(134,194,108,0.1)", color: "#86c26c" }}>🚶 Walk</div> : <div style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, background: "rgba(194,140,108,0.1)", color: "#c2946c" }}>🏠 Indoor</div>}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div style={{ marginTop: 20, background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)", borderRadius: 16, padding: 18, textAlign: "center" }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: "#86c26c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>Week at a Glance</div>
-                  <div style={{ fontSize: 14, color: "#a8c89a" }}>{weeklyWeather.filter(function(w) { return w.good; }).length} outdoor · {weeklyWeather.filter(function(w) { return !w.good; }).length} indoor days</div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* BOTTOM NAV */}
-          <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 390, padding: "12px 24px 28px", background: "linear-gradient(to top, #0a160a 60%, transparent)", display: "flex", justifyContent: "space-around", zIndex: 50 }}>
-            {[{ icon: "🏠", label: "Today", s: "home" }, { icon: "📅", label: "Week", s: "week" }, { icon: "🏃", label: "Indoor", s: "indoor" }].map(function(item, i) {
-              return (<button key={i} onClick={function() { if (item.s === "indoor") setIndoorActivity(getRandomActivity()); setScreen(item.s); setShowProfile(false); }} style={{ background: "none", border: "none", cursor: "pointer", textAlign: "center", padding: "6px 16px" }}>
-                <div style={{ fontSize: 22, marginBottom: 2 }}>{item.icon}</div>
-                <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.5, color: (screen === item.s || (item.s === "home" && (screen === "detail" || screen === "indoor_done" || screen === "checkin_done"))) ? "#86c26c" : "#4a5a40" }}>{item.label}</div>
-              </button>);
-            })}
-          </div>
-
-          {showInstall && <InstallPrompt onDismiss={function() { setShowInstall(false); localStorage.setItem("stepout_install_dismissed", "true"); }} />}
-        </div>
-      );
+  function handleCheckIn(response) {
+    if (response === "walk") {
+      logActivity("walk");
+      setScreen("checkin_done");
+    } else if (response === "indoor") {
+      setCheckInVisible(false);
+      setIndoorActivity(getRandomActivity());
+      setScreen("indoor");
+    } else if (response === "skip") {
+      setCheckInVisible(false);
+      setMissedWalk(true);
+      setScreen("home");
     }
+  }
 
-    /* =========== ROOT =========== */
-    function App() {
-      const [user, setUser] = useState(null);
-      const [loading, setLoading] = useState(true);
+  /* ── GOOGLE CALENDAR ── */
+  function openGoogleCalendar(slot) {
+    var now = new Date();
+    var timeParts = slot.time.match(/(\d+)\s*(AM|PM)/i);
+    if (!timeParts) return;
+    var hr = parseInt(timeParts[1]);
+    if (timeParts[2].toUpperCase() === "PM" && hr !== 12) hr += 12;
+    if (timeParts[2].toUpperCase() === "AM" && hr === 12) hr = 0;
+    var start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hr, 0, 0);
+    var end = new Date(start.getTime() + duration * 60000);
+    function pad(n) { return n < 10 ? "0" + n : n; }
+    function fmt(d) { return d.getFullYear() + "" + pad(d.getMonth()+1) + "" + pad(d.getDate()) + "T" + pad(d.getHours()) + "" + pad(d.getMinutes()) + "00"; }
+    var url = "https://calendar.google.com/calendar/render?action=TEMPLATE" +
+      "&text=" + encodeURIComponent(duration + "-Min StepOut Walk") +
+      "&dates=" + fmt(start) + "/" + fmt(end) +
+      "&details=" + encodeURIComponent("Time for your daily walk! \uD83D\uDEB6\u200D\u2640\uFE0F StepOut Daily reminder.") +
+      "&sf=true&output=xml";
+    window.open(url, "_blank");
+  }
 
-      useEffect(function() {
-        if (firebaseReady && auth) {
-          auth.onAuthStateChanged(function(fu) {
-            if (fu) setUser({ uid: fu.uid, email: fu.email, name: fu.displayName || fu.email, provider: fu.providerData[0] && fu.providerData[0].providerId === "google.com" ? "google" : "email" });
-            setLoading(false);
+  /* ── PASSWORD RESET ── */
+  function handleSendPasswordReset() {
+    setPasswordMsg(""); setPasswordErr("");
+    if (user.provider === "google") {
+      setPasswordErr("Your account uses Google Sign-In. To change your password, visit myaccount.google.com");
+      return;
+    }
+    if (firebaseReady && auth && auth.currentUser) {
+      auth.sendPasswordResetEmail(auth.currentUser.email).then(function() {
+        setPasswordMsg("Password reset email sent to " + auth.currentUser.email + ". Check your inbox!");
+      }).catch(function(e) {
+        setPasswordErr(e.message || "Failed to send reset email.");
+      });
+    }
+  }
+
+  /* ── SIGN OUT ── */
+  function handleSignOut() {
+    if (firebaseReady && auth) {
+      auth.signOut();
+    }
+  }
+
+  /* ── DERIVED VALUES ── */
+  var todayLogged = weekLog[todayKey];
+  var daysCompleted = Object.keys(weekLog).length;
+  var progressPct = Math.round((daysCompleted / 7) * 100);
+  var streakMsg = "";
+  for (var si = 0; si < STREAK_MESSAGES.length; si++) {
+    if (streak >= STREAK_MESSAGES[si].min && streak <= STREAK_MESSAGES[si].max) {
+      streakMsg = STREAK_MESSAGES[si].msg;
+      break;
+    }
+  }
+  var currentMilestone = null;
+  for (var mi = HEALTH_MILESTONES.length - 1; mi >= 0; mi--) {
+    if (weeklyMins >= HEALTH_MILESTONES[mi].mins) { currentMilestone = HEALTH_MILESTONES[mi]; break; }
+  }
+  var nextMilestone = null;
+  for (var ni = 0; ni < HEALTH_MILESTONES.length; ni++) {
+    if (HEALTH_MILESTONES[ni].mins > weeklyMins) { nextMilestone = HEALTH_MILESTONES[ni]; break; }
+  }
+
+  // Best time suggestions
+  var suggestions = [];
+  hourlyWeather.forEach(function(w, i) {
+    suggestions.push({
+      time: w.time, weather: w,
+      score: w.good ? (w.condition.toLowerCase().includes("sun") || w.condition.toLowerCase().includes("clear") ? 3 : 2) : 0,
+      isOutdoor: w.good,
+    });
+  });
+  suggestions.sort(function(a, b) { return b.score - a.score; });
+  var bestOutdoor = suggestions.find(function(s) { return s.isOutdoor; });
+
+  /* ── STYLES ── */
+  var cardStyle = {
+    background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)",
+    borderRadius: 16, padding: "16px 18px", marginBottom: 12,
+  };
+
+  var pillStyle = function(active) {
+    return {
+      flex: 1, padding: "12px 0", borderRadius: 12, border: "none", cursor: "pointer",
+      fontSize: 15, fontWeight: 600, fontFamily: "inherit",
+      background: active ? "#86c26c" : "rgba(255,255,255,0.06)",
+      color: active ? "#0a160a" : "#8a9a7e", transition: "all 0.2s ease",
+    };
+  };
+
+  if (!dataLoaded) {
+    return React.createElement("div", { style: {
+      maxWidth: 390, margin: "0 auto", minHeight: "100vh",
+      background: "linear-gradient(170deg, #1a2e1a 0%, #0f1f0f 40%, #0a160a 100%)",
+      display: "flex", alignItems: "center", justifyContent: "center", color: "#86c26c",
+    } },
+      React.createElement("div", { className: "pulse", style: { textAlign: "center" } },
+        React.createElement("div", { style: { fontSize: 48, marginBottom: 12 } }, "\uD83D\uDEB6\u200D\u2640\uFE0F"),
+        React.createElement("div", { style: { fontSize: 16, fontWeight: 600 } }, "Loading your data...")
+      )
+    );
+  }
+
+  /* ── RENDER ── */
+  return React.createElement("div", { style: {
+    maxWidth: 390, margin: "0 auto", minHeight: "100vh",
+    background: "linear-gradient(170deg, #1a2e1a 0%, #0f1f0f 40%, #0a160a 100%)",
+    fontFamily: "'Instrument Sans', 'Avenir Next', system-ui, sans-serif",
+    color: "#e8efe4", position: "relative", overflow: "hidden",
+  } },
+    /* Ambient glows */
+    React.createElement("div", { style: { position: "absolute", top: -80, right: -80, width: 260, height: 260, background: "radial-gradient(circle, rgba(134,194,108,0.12) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" } }),
+    React.createElement("div", { style: { position: "absolute", bottom: 100, left: -60, width: 200, height: 200, background: "radial-gradient(circle, rgba(194,168,108,0.08) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" } }),
+
+    React.createElement("div", { style: { padding: "0 0 100px 0" } },
+
+      /* ═══════════ HOME ═══════════ */
+      screen === "home" && React.createElement("div", { className: "fade-up", style: { padding: "56px 24px 24px" } },
+
+        /* Header with profile */
+        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 } },
+          React.createElement("div", null,
+            React.createElement("div", { style: { fontSize: 13, letterSpacing: 2.5, textTransform: "uppercase", color: "#86c26c", fontWeight: 600, marginBottom: 4 } }, dayName),
+            React.createElement("h1", { style: { fontFamily: "'Playfair Display', Georgia, serif", fontSize: 34, fontWeight: 700, margin: 0, lineHeight: 1.1, color: "#f0f7ec" } },
+              "Step", React.createElement("span", { style: { color: "#86c26c" } }, "Out")
+            ),
+            React.createElement("div", { style: { fontSize: 14, color: "#8a9a7e", marginTop: 4 } }, dateStr, locationName ? " \u00B7 " + locationName : "")
+          ),
+          /* Profile button */
+          React.createElement("div", { style: { position: "relative" } },
+            React.createElement("button", { onClick: function() { setProfileOpen(!profileOpen); }, style: {
+              background: "linear-gradient(135deg, #86c26c, #6ba352)", border: "none",
+              borderRadius: "50%", width: 42, height: 42, display: "flex", alignItems: "center",
+              justifyContent: "center", cursor: "pointer", fontSize: 18, fontWeight: 700,
+              color: "#0a160a", marginTop: 4,
+            } }, (user.displayName || user.email || "U").charAt(0).toUpperCase()),
+            /* Profile dropdown */
+            profileOpen && React.createElement("div", { style: {
+              position: "absolute", top: 50, right: 0, width: 260, background: "#1a2e1a",
+              border: "1px solid rgba(134,194,108,0.25)", borderRadius: 16, padding: 16,
+              boxShadow: "0 8px 32px rgba(0,0,0,0.4)", zIndex: 100,
+            } },
+              React.createElement("div", { style: { fontSize: 14, fontWeight: 600, color: "#e8efe4", marginBottom: 2 } }, user.displayName || "StepOut User"),
+              React.createElement("div", { style: { fontSize: 12, color: "#6b7a60", marginBottom: 16, wordBreak: "break-all" } }, user.email),
+              React.createElement("div", { style: { height: 1, background: "rgba(255,255,255,0.08)", marginBottom: 12 } }),
+              /* Change password */
+              React.createElement("button", { onClick: handleSendPasswordReset, style: {
+                width: "100%", padding: "10px 12px", borderRadius: 10, cursor: "pointer",
+                background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+                color: "#e8efe4", fontSize: 13, fontFamily: "inherit", textAlign: "left", marginBottom: 8,
+              } }, "\uD83D\uDD11 Change Password"),
+              passwordMsg && React.createElement("div", { style: { fontSize: 12, color: "#86c26c", marginBottom: 8, padding: "6px 8px", background: "rgba(134,194,108,0.1)", borderRadius: 8 } }, passwordMsg),
+              passwordErr && React.createElement("div", { style: { fontSize: 12, color: "#e8efe4", marginBottom: 8, padding: "6px 8px", background: "rgba(220,80,60,0.12)", borderRadius: 8 } }, passwordErr),
+              /* Sign out */
+              React.createElement("button", { onClick: handleSignOut, style: {
+                width: "100%", padding: "10px 12px", borderRadius: 10, cursor: "pointer",
+                background: "rgba(220,80,60,0.1)", border: "1px solid rgba(220,80,60,0.2)",
+                color: "#e07060", fontSize: 13, fontFamily: "inherit", textAlign: "left",
+              } }, "\uD83D\uDEAA Sign Out")
+            )
+          )
+        ),
+
+        /* Location prompt (shown if location not yet asked) */
+        (locationStatus === "unknown") && React.createElement(LocationPrompt, { onAllow: requestLocation, onSkip: skipLocation }),
+
+        /* Loading weather indicator */
+        locationStatus === "loading" && React.createElement("div", { style: {
+          background: "rgba(134,194,108,0.08)", borderRadius: 16, padding: 16, marginBottom: 20, textAlign: "center",
+        } },
+          React.createElement("div", { className: "pulse", style: { fontSize: 14, color: "#86c26c" } }, "\uD83D\uDCCD Getting your location and weather...")
+        ),
+
+        /* Streak + Progress */
+        React.createElement("div", { style: { display: "flex", gap: 12, marginBottom: 20 } },
+          /* Streak */
+          React.createElement("div", { style: {
+            flex: 1, background: "linear-gradient(135deg, rgba(255,160,60,0.12) 0%, rgba(255,120,20,0.05) 100%)",
+            border: "1px solid rgba(255,160,60,0.2)", borderRadius: 16, padding: "16px 14px", textAlign: "center",
+          } },
+            React.createElement("div", { style: { fontSize: 32, marginBottom: 2 } }, "\uD83D\uDD25"),
+            React.createElement("div", { style: { fontSize: 28, fontWeight: 700, color: "#ffa03c", fontFamily: "'Playfair Display', serif" } }, streak),
+            React.createElement("div", { style: { fontSize: 11, color: "#c49a5c", fontWeight: 600, letterSpacing: 0.5 } }, "Day Streak")
+          ),
+          /* Weekly progress */
+          React.createElement("div", { style: {
+            flex: 2, background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)",
+            borderRadius: 16, padding: "14px 16px",
+          } },
+            React.createElement("div", { style: { fontSize: 11, fontWeight: 600, color: "#6b7a60", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 10 } }, "This Week"),
+            React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 10 } },
+              DAYS.map(function(d, i) {
+                var dayDate = new Date(today);
+                dayDate.setDate(today.getDate() - todayIdx + i);
+                var dayKey = dayDate.toISOString().split("T")[0];
+                var status = weekLog[dayKey];
+                var isToday = i === todayIdx;
+                return React.createElement("div", { key: i, style: { flex: 1, textAlign: "center" } },
+                  React.createElement("div", { style: { fontSize: 10, color: isToday ? "#86c26c" : "#5a6a50", marginBottom: 4, fontWeight: isToday ? 700 : 400 } }, d),
+                  React.createElement("div", { style: {
+                    width: 28, height: 28, borderRadius: "50%", margin: "0 auto",
+                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13,
+                    background: status === "walk" ? "rgba(134,194,108,0.25)" : status === "indoor" ? "rgba(194,168,108,0.25)" : isToday ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)",
+                    border: isToday ? "2px solid #86c26c" : "1px solid rgba(255,255,255,0.06)",
+                  } }, status === "walk" ? "\uD83D\uDEB6" : status === "indoor" ? "\uD83C\uDFE0" : "")
+                );
+              })
+            ),
+            React.createElement("div", { style: { height: 6, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "hidden" } },
+              React.createElement("div", { style: { height: "100%", width: progressPct + "%", borderRadius: 3, background: "linear-gradient(90deg, #86c26c, #a8d98a)", transition: "width 0.5s ease" } })
+            ),
+            React.createElement("div", { style: { fontSize: 11, color: "#6b7a60", marginTop: 6 } }, daysCompleted + "/7 days active")
+          )
+        ),
+
+        /* Streak message */
+        streakMsg && React.createElement("div", { style: {
+          background: "rgba(255,160,60,0.06)", border: "1px solid rgba(255,160,60,0.12)",
+          borderRadius: 12, padding: "10px 14px", marginBottom: 20, textAlign: "center",
+        } },
+          React.createElement("div", { style: { fontSize: 13, color: "#d4a860", fontStyle: "italic", fontFamily: "'Playfair Display', serif" } }, "\u201C" + streakMsg + "\u201D")
+        ),
+
+        /* Health Impact */
+        React.createElement("div", { style: {
+          background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)",
+          borderRadius: 16, padding: 18, marginBottom: 20,
+        } },
+          React.createElement("div", { style: { fontSize: 11, fontWeight: 600, color: "#86c26c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 } }, "\uD83E\uDDEC Your Longevity Impact This Week"),
+          React.createElement("div", { style: { fontSize: 26, fontWeight: 700, color: "#e8efe4", fontFamily: "'Playfair Display', serif" } }, weeklyMins + " minutes"),
+          currentMilestone && React.createElement("div", { style: { fontSize: 13, color: "#a8c89a", marginTop: 4 } }, "\u2705 " + currentMilestone.label),
+          nextMilestone && React.createElement("div", { style: { fontSize: 12, color: "#6b7a60", marginTop: 6 } }, "Next milestone: " + nextMilestone.mins + " min \u2014 " + (nextMilestone.mins - weeklyMins) + " min to go")
+        ),
+
+        /* Check-in banner */
+        checkInVisible && scheduledWalk && React.createElement("div", { style: {
+          background: "linear-gradient(135deg, rgba(134,194,108,0.1) 0%, rgba(134,194,108,0.04) 100%)",
+          border: "1px solid rgba(134,194,108,0.3)", borderRadius: 20, padding: 22, marginBottom: 20,
+        } },
+          React.createElement("div", { style: { fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 700, color: "#f0f7ec", marginBottom: 6 } }, "Did you complete your walk?"),
+          React.createElement("div", { style: { fontSize: 14, color: "#8a9a7e", marginBottom: 18, lineHeight: 1.4 } }, "Your " + duration + "-min walk was scheduled for " + scheduledWalk.time + ". Let us know so we can keep your streak going."),
+          React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
+            React.createElement("button", { onClick: function() { handleCheckIn("walk"); }, style: {
+              width: "100%", padding: "14px 0", borderRadius: 12, border: "none", cursor: "pointer",
+              background: "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)", color: "#0a160a",
+              fontSize: 15, fontWeight: 700, fontFamily: "inherit",
+            } }, "\u2705 Yes, I walked!"),
+            React.createElement("button", { onClick: function() { handleCheckIn("indoor"); }, style: {
+              width: "100%", padding: "14px 0", borderRadius: 12, cursor: "pointer",
+              background: "rgba(194,140,108,0.12)", border: "1px solid rgba(194,140,108,0.25)",
+              color: "#c2946c", fontSize: 14, fontWeight: 600, fontFamily: "inherit",
+            } }, "\uD83C\uDFE0 No, but I\u2019ll do indoor instead"),
+            React.createElement("button", { onClick: function() { handleCheckIn("skip"); }, style: {
+              width: "100%", padding: "12px 0", borderRadius: 12, cursor: "pointer",
+              background: "none", border: "1px solid rgba(255,255,255,0.08)",
+              color: "#5a6a50", fontSize: 13, fontWeight: 500, fontFamily: "inherit",
+            } }, "Skip today")
+          )
+        ),
+
+        /* Missed walk banner */
+        missedWalk && React.createElement("div", { style: {
+          background: "linear-gradient(135deg, rgba(194,140,108,0.12) 0%, rgba(194,108,108,0.06) 100%)",
+          border: "1px solid rgba(194,140,108,0.25)", borderRadius: 16, padding: 18, marginBottom: 20,
+        } },
+          React.createElement("div", { style: { fontSize: 13, fontWeight: 600, color: "#c2946c", marginBottom: 6 } }, "\u2600\uFE0F Missed your walk \u2014 no worries!"),
+          React.createElement("div", { style: { fontSize: 13, color: "#a89070", lineHeight: 1.5, marginBottom: 14 } }, "A quick 10-minute indoor activity counts just as much for your body."),
+          React.createElement("button", { onClick: function() { setIndoorActivity(getRandomActivity()); setScreen("indoor"); }, style: {
+            width: "100%", padding: "14px 0", borderRadius: 12, border: "none", cursor: "pointer",
+            background: "linear-gradient(135deg, #c2946c 0%, #a87d52 100%)", color: "#1a1008",
+            fontSize: 14, fontWeight: 700, fontFamily: "inherit",
+          } }, "\uD83C\uDFE0 Do an Indoor Activity Instead")
+        ),
+
+        /* Settings panel */
+        showSettings && React.createElement("div", { style: {
+          background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)",
+          borderRadius: 16, padding: 20, marginBottom: 20,
+        } },
+          React.createElement("div", { style: { fontSize: 13, fontWeight: 600, color: "#86c26c", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 14 } }, "Walk Duration"),
+          React.createElement("div", { style: { display: "flex", gap: 10 } },
+            [20, 30, 60].map(function(d) {
+              return React.createElement("button", { key: d, onClick: function() { setDuration(d); saveData({ duration: d }); }, style: pillStyle(duration === d) }, d + " min");
+            })
+          ),
+          React.createElement("div", { style: { fontSize: 12, color: "#6b7a60", marginTop: 10 } }, "Currently set to " + duration + "-minute walks"),
+          /* Location toggle */
+          (locationStatus === "denied" || locationStatus === "skipped") && React.createElement("div", { style: { marginTop: 16 } },
+            React.createElement("div", { style: { height: 1, background: "rgba(255,255,255,0.06)", marginBottom: 16 } }),
+            React.createElement("button", { onClick: requestLocation, style: {
+              width: "100%", padding: "12px 0", borderRadius: 10, cursor: "pointer",
+              background: "rgba(134,194,108,0.1)", border: "1px solid rgba(134,194,108,0.2)",
+              color: "#86c26c", fontSize: 13, fontFamily: "inherit",
+            } }, "\uD83D\uDCCD Enable Location for Real Weather")
+          )
+        ),
+
+        /* Daily insight */
+        React.createElement("div", { style: {
+          background: "rgba(194,168,108,0.08)", border: "1px solid rgba(194,168,108,0.15)",
+          borderRadius: 16, padding: 18, marginBottom: 20,
+        } },
+          React.createElement("div", { style: { fontSize: 11, fontWeight: 600, color: "#c2a86c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 } }, "\uD83D\uDCA1 Daily Longevity Insight"),
+          React.createElement("div", { style: { fontFamily: "'Playfair Display', Georgia, serif", fontStyle: "italic", fontSize: 14.5, lineHeight: 1.5, color: "#d4c9a8" } }, "\u201C" + dailyQuote + "\u201D")
+        ),
+
+        /* Hourly weather */
+        React.createElement("div", { style: { marginBottom: 24 } },
+          React.createElement("div", { style: { fontSize: 13, fontWeight: 600, color: "#6b7a60", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 14 } }, "Today\u2019s Weather"),
+          React.createElement("div", { style: { display: "flex", gap: 6, overflowX: "auto", paddingBottom: 8, scrollbarWidth: "none" } },
+            hourlyWeather.map(function(w, i) {
+              return React.createElement("div", { key: i, style: {
+                minWidth: 62, padding: "10px 6px", borderRadius: 14, textAlign: "center",
+                background: w.good ? "rgba(134,194,108,0.08)" : "rgba(194,108,108,0.08)",
+                border: "1px solid " + (w.good ? "rgba(134,194,108,0.15)" : "rgba(194,108,108,0.15)"),
+              } },
+                React.createElement("div", { style: { fontSize: 10, color: "#8a9a7e", marginBottom: 4 } }, w.time),
+                React.createElement("div", { style: { fontSize: 20, marginBottom: 2 } }, w.icon),
+                React.createElement("div", { style: { fontSize: 13, fontWeight: 600, color: "#e8efe4" } }, w.temp + "\u00B0")
+              );
+            })
+          )
+        ),
+
+        /* Best time card */
+        bestOutdoor && !todayLogged && React.createElement("div", { style: { marginBottom: 20 } },
+          React.createElement("div", { style: { fontSize: 13, fontWeight: 600, color: "#6b7a60", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 14 } }, "\u2B50 Best Time to Walk"),
+          React.createElement("button", { onClick: function() { setSelectedSlot(bestOutdoor); setScreen("detail"); }, style: {
+            width: "100%", background: "linear-gradient(135deg, rgba(134,194,108,0.15) 0%, rgba(134,194,108,0.05) 100%)",
+            border: "1px solid rgba(134,194,108,0.3)", borderRadius: 20, padding: 22,
+            cursor: "pointer", textAlign: "left", fontFamily: "inherit",
+          } },
+            React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
+              React.createElement("div", null,
+                React.createElement("div", { style: { fontSize: 28, fontWeight: 700, color: "#86c26c", fontFamily: "'Playfair Display', serif" } }, bestOutdoor.time),
+                React.createElement("div", { style: { fontSize: 14, color: "#b0c4a4", marginTop: 4 } }, bestOutdoor.weather.icon + " " + bestOutdoor.weather.temp + "\u00B0 \u00B7 " + bestOutdoor.weather.condition + " \u00B7 " + duration + " min walk")
+              ),
+              React.createElement("div", { style: { fontSize: 28, opacity: 0.6 } }, "\u2192")
+            )
+          )
+        ),
+
+        /* Today already logged */
+        todayLogged && React.createElement("div", { style: {
+          background: "rgba(134,194,108,0.1)", border: "1px solid rgba(134,194,108,0.3)",
+          borderRadius: 16, padding: 20, marginBottom: 20, textAlign: "center",
+        } },
+          React.createElement("div", { style: { fontSize: 36, marginBottom: 8 } }, "\u2705"),
+          React.createElement("div", { style: { fontSize: 17, fontWeight: 700, color: "#86c26c" } }, "Today\u2019s Activity Logged!"),
+          React.createElement("div", { style: { fontSize: 13, color: "#8a9a7e", marginTop: 4 } }, "You did a " + (todayLogged === "walk" ? "walk" : "indoor activity") + " today. Great job!")
+        ),
+
+        /* All slots */
+        !todayLogged && React.createElement("div", null,
+          React.createElement("div", { style: { fontSize: 13, fontWeight: 600, color: "#6b7a60", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 14 } }, "All Available Slots"),
+          React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
+            suggestions.slice(0, 8).map(function(s, i) {
+              return React.createElement("button", { key: i, onClick: function() {
+                if (s.isOutdoor) { setSelectedSlot(s); setScreen("detail"); }
+                else { setIndoorActivity(getRandomActivity()); setScreen("indoor"); }
+              }, style: Object.assign({}, cardStyle, {
+                width: "100%", cursor: "pointer", textAlign: "left", fontFamily: "inherit",
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+              }) },
+                React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12 } },
+                  React.createElement("span", { style: { fontSize: 22 } }, s.weather.icon),
+                  React.createElement("div", null,
+                    React.createElement("div", { style: { fontSize: 15, fontWeight: 600, color: "#e8efe4" } }, s.time),
+                    React.createElement("div", { style: { fontSize: 12, color: "#8a9a7e" } }, s.weather.temp + "\u00B0 \u00B7 " + s.weather.condition)
+                  )
+                ),
+                React.createElement("div", { style: {
+                  fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8,
+                  background: s.isOutdoor ? "rgba(134,194,108,0.15)" : "rgba(194,140,108,0.15)",
+                  color: s.isOutdoor ? "#86c26c" : "#c2946c",
+                } }, s.isOutdoor ? "Walk" : "Indoor")
+              );
+            })
+          )
+        )
+      ),
+
+      /* ═══════════ DETAIL ═══════════ */
+      screen === "detail" && selectedSlot && React.createElement("div", { className: "fade-up", style: { padding: "56px 24px 24px" } },
+        React.createElement("button", { onClick: function() { setScreen("home"); }, style: {
+          background: "none", border: "none", color: "#86c26c", fontSize: 14, fontWeight: 600,
+          cursor: "pointer", fontFamily: "inherit", padding: 0, marginBottom: 24,
+        } }, "\u2190 Back"),
+
+        React.createElement("div", { style: { textAlign: "center", padding: "32px 0 24px" } },
+          React.createElement("div", { style: { fontSize: 56, marginBottom: 12 } }, selectedSlot.weather.icon),
+          React.createElement("h2", { style: { fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 700, margin: 0, color: "#f0f7ec" } }, selectedSlot.time),
+          React.createElement("div", { style: { fontSize: 16, color: "#8a9a7e", marginTop: 8 } }, selectedSlot.weather.temp + "\u00B0 \u00B7 " + selectedSlot.weather.condition + " \u00B7 Wind " + selectedSlot.weather.windMph + " mph")
+        ),
+
+        React.createElement("div", { style: {
+          background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)",
+          borderRadius: 20, padding: 24, marginBottom: 24,
+        } },
+          React.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 16 } },
+            React.createElement("div", null,
+              React.createElement("div", { style: { fontSize: 12, color: "#6b7a60", textTransform: "uppercase", letterSpacing: 1 } }, "Duration"),
+              React.createElement("div", { style: { fontSize: 20, fontWeight: 700, color: "#e8efe4" } }, duration + " minutes")
+            ),
+            React.createElement("div", { style: { textAlign: "right" } },
+              React.createElement("div", { style: { fontSize: 12, color: "#6b7a60", textTransform: "uppercase", letterSpacing: 1 } }, "Type"),
+              React.createElement("div", { style: { fontSize: 20, fontWeight: 700, color: "#86c26c" } }, "Outdoor Walk")
+            )
+          ),
+          React.createElement("div", { style: { fontSize: 13, color: "#8a9a7e", lineHeight: 1.5 } }, "\uD83C\uDF3F Perfect conditions for a " + duration + "-minute walk. Remember to hydrate before heading out.")
+        ),
+
+        /* Schedule button (calendar only) */
+        React.createElement("button", { onClick: function() { openGoogleCalendar(selectedSlot); setScheduledWalk({ time: selectedSlot.time }); }, style: {
+          width: "100%", padding: "16px 0", borderRadius: 16, border: "none",
+          background: "rgba(134,194,108,0.15)", color: "#86c26c", fontSize: 15, fontWeight: 700,
+          cursor: "pointer", fontFamily: "inherit", marginBottom: 12,
+          border: "1px solid rgba(134,194,108,0.3)",
+        } }, "\uD83D\uDCC5 Schedule Walk (Add to Calendar)"),
+
+        /* Log walk button (confirms completion) */
+        !todayLogged && React.createElement("button", { onClick: function() { logActivity("walk"); setScreen("checkin_done"); }, style: {
+          width: "100%", padding: "18px 0", borderRadius: 16, border: "none",
+          background: "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)", color: "#0a160a",
+          fontSize: 17, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+          boxShadow: "0 4px 24px rgba(134,194,108,0.3)",
+        } }, "\u2705 I Did This Walk \u2014 Log It"),
+
+        todayLogged && React.createElement("div", { style: {
+          padding: "16px", borderRadius: 16, background: "rgba(134,194,108,0.1)",
+          border: "1px solid rgba(134,194,108,0.3)", textAlign: "center",
+        } },
+          React.createElement("div", { style: { fontSize: 15, fontWeight: 600, color: "#86c26c" } }, "\u2705 Already logged for today!")
+        ),
+
+        React.createElement("div", { style: {
+          marginTop: 24, background: "rgba(194,168,108,0.08)", border: "1px solid rgba(194,168,108,0.15)",
+          borderRadius: 16, padding: 18,
+        } },
+          React.createElement("div", { style: { fontSize: 11, fontWeight: 600, color: "#c2a86c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 } }, "\uD83E\uDDEC Longevity Tip"),
+          React.createElement("div", { style: { fontSize: 13.5, lineHeight: 1.55, color: "#d4c9a8" } }, "Walking outdoors in natural light helps regulate your circadian rhythm, which governs everything from hormone production to cellular repair.")
+        )
+      ),
+
+      /* ═══════════ INDOOR ═══════════ */
+      screen === "indoor" && React.createElement("div", { className: "fade-up", style: { padding: "56px 24px 24px" } },
+        React.createElement("button", { onClick: function() { setScreen("home"); }, style: {
+          background: "none", border: "none", color: "#86c26c", fontSize: 14, fontWeight: 600,
+          cursor: "pointer", fontFamily: "inherit", padding: 0, marginBottom: 24,
+        } }, "\u2190 Back"),
+        React.createElement("div", { style: { textAlign: "center", padding: "20px 0 28px" } },
+          React.createElement("div", { style: { fontSize: 12, letterSpacing: 2.5, textTransform: "uppercase", color: "#c2946c", fontWeight: 600, marginBottom: 12 } }, "\uD83C\uDF27\uFE0F Stay Active Indoors"),
+          React.createElement("h2", { style: { fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, margin: 0, color: "#f0f7ec" } }, "Indoor Activity")
+        ),
+        React.createElement("div", { style: {
+          background: "linear-gradient(135deg, rgba(194,140,108,0.1) 0%, rgba(194,140,108,0.03) 100%)",
+          border: "1px solid rgba(194,140,108,0.2)", borderRadius: 24, padding: 28, textAlign: "center", marginBottom: 20,
+        } },
+          React.createElement("div", { style: { fontSize: 52, marginBottom: 12 } }, indoorActivity.icon),
+          React.createElement("div", { style: { fontSize: 22, fontWeight: 700, color: "#e8efe4", marginBottom: 6, fontFamily: "'Playfair Display', serif" } }, indoorActivity.name),
+          React.createElement("div", { style: { display: "inline-block", fontSize: 12, fontWeight: 600, padding: "4px 12px", borderRadius: 8, background: "rgba(194,140,108,0.15)", color: "#c2946c" } }, "~" + indoorActivity.duration + " \u00B7 No equipment needed"),
+          React.createElement("div", { style: { marginTop: 16, padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", textAlign: "left" } },
+            React.createElement("div", { style: { fontSize: 11, fontWeight: 600, color: "#c2946c", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6 } }, "How To Do It"),
+            React.createElement("div", { style: { fontSize: 13.5, lineHeight: 1.6, color: "#b0bca4" } }, indoorActivity.howTo)
+          )
+        ),
+        React.createElement("div", { style: {
+          background: "rgba(194,168,108,0.08)", border: "1px solid rgba(194,168,108,0.15)",
+          borderRadius: 16, padding: 18, marginBottom: 20,
+        } },
+          React.createElement("div", { style: { fontSize: 11, fontWeight: 600, color: "#c2a86c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 } }, "\uD83E\uDDEC Why This Matters"),
+          React.createElement("div", { style: { fontSize: 13.5, lineHeight: 1.6, color: "#d4c9a8" } }, indoorActivity.tip)
+        ),
+        React.createElement("button", { onClick: function() { setIndoorActivity(getRandomActivity()); }, style: {
+          width: "100%", padding: "16px 0", borderRadius: 14, cursor: "pointer",
+          background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+          color: "#e8efe4", fontSize: 15, fontWeight: 600, fontFamily: "inherit", marginBottom: 10,
+        } }, "\uD83D\uDD04 Give Me a Different Activity"),
+        !todayLogged && React.createElement("button", { onClick: function() { logActivity("indoor"); setScreen("indoor_done"); }, style: {
+          width: "100%", padding: "16px 0", borderRadius: 14, cursor: "pointer",
+          background: "linear-gradient(135deg, #c2946c 0%, #a87d52 100%)", border: "none",
+          color: "#1a1008", fontSize: 15, fontWeight: 700, fontFamily: "inherit",
+        } }, "\u2705 I Did This \u2014 Log It"),
+        todayLogged && React.createElement("div", { style: { padding: 16, borderRadius: 14, background: "rgba(134,194,108,0.1)", border: "1px solid rgba(134,194,108,0.3)", textAlign: "center" } },
+          React.createElement("div", { style: { fontSize: 15, fontWeight: 600, color: "#86c26c" } }, "\u2705 Already logged for today!")
+        )
+      ),
+
+      /* ═══════════ INDOOR DONE ═══════════ */
+      screen === "indoor_done" && React.createElement("div", { className: "fade-up", style: { padding: "56px 24px 24px", textAlign: "center" } },
+        React.createElement("div", { style: { fontSize: 64, marginBottom: 16, marginTop: 40 } }, "\uD83C\uDF89"),
+        React.createElement("h2", { style: { fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, margin: "0 0 8px", color: "#f0f7ec" } }, "Nice Work!"),
+        React.createElement("div", { style: { fontSize: 16, color: "#8a9a7e", marginBottom: 24 } }, "Your streak lives on."),
+        React.createElement("div", { style: { background: "rgba(255,160,60,0.1)", border: "1px solid rgba(255,160,60,0.2)", borderRadius: 20, padding: 24, marginBottom: 24 } },
+          React.createElement("div", { style: { fontSize: 42, fontWeight: 700, color: "#ffa03c", fontFamily: "'Playfair Display', serif" } }, "\uD83D\uDD25 " + streak + " days"),
+          React.createElement("div", { style: { fontSize: 14, color: "#c49a5c", marginTop: 4 } }, streakMsg)
+        ),
+        React.createElement("button", { onClick: function() { setScreen("home"); }, style: {
+          width: "100%", padding: "16px 0", borderRadius: 14, cursor: "pointer",
+          background: "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)", border: "none",
+          color: "#0a160a", fontSize: 15, fontWeight: 700, fontFamily: "inherit",
+        } }, "\u2190 Back to Home")
+      ),
+
+      /* ═══════════ CHECK-IN DONE ═══════════ */
+      screen === "checkin_done" && React.createElement("div", { className: "fade-up", style: { padding: "56px 24px 24px", textAlign: "center" } },
+        React.createElement("div", { style: { fontSize: 64, marginBottom: 16, marginTop: 40 } }, "\uD83D\uDEB6\u200D\u2640\uFE0F"),
+        React.createElement("h2", { style: { fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, margin: "0 0 8px", color: "#f0f7ec" } }, "Way to Go!"),
+        React.createElement("div", { style: { fontSize: 16, color: "#8a9a7e", marginBottom: 8 } }, "Walk logged \u2014 " + duration + " minutes in the books."),
+        React.createElement("div", { style: { background: "rgba(255,160,60,0.1)", border: "1px solid rgba(255,160,60,0.2)", borderRadius: 20, padding: 24, marginBottom: 20, marginTop: 24 } },
+          React.createElement("div", { style: { fontSize: 42, fontWeight: 700, color: "#ffa03c", fontFamily: "'Playfair Display', serif" } }, "\uD83D\uDD25 " + streak + " days"),
+          React.createElement("div", { style: { fontSize: 14, color: "#c49a5c", marginTop: 4 } }, streakMsg)
+        ),
+        React.createElement("div", { style: { background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)", borderRadius: 16, padding: 18, marginBottom: 20, textAlign: "left" } },
+          React.createElement("div", { style: { fontSize: 11, fontWeight: 600, color: "#86c26c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 } }, "Weekly Total"),
+          React.createElement("div", { style: { fontSize: 24, fontWeight: 700, color: "#e8efe4", fontFamily: "'Playfair Display', serif" } }, weeklyMins + " minutes"),
+          currentMilestone && React.createElement("div", { style: { fontSize: 13, color: "#a8c89a", marginTop: 4 } }, "\u2705 " + currentMilestone.label),
+          nextMilestone && React.createElement("div", { style: { fontSize: 12, color: "#6b7a60", marginTop: 6 } }, "Next: " + nextMilestone.mins + " min \u2014 " + (nextMilestone.mins - weeklyMins) + " min to go")
+        ),
+        React.createElement("button", { onClick: function() { setScreen("home"); }, style: {
+          width: "100%", padding: "16px 0", borderRadius: 14, cursor: "pointer",
+          background: "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)", border: "none",
+          color: "#0a160a", fontSize: 15, fontWeight: 700, fontFamily: "inherit",
+        } }, "\u2190 Back to Home")
+      ),
+
+      /* ═══════════ WEEKLY PLAN ═══════════ */
+      screen === "week" && React.createElement("div", { className: "fade-up", style: { padding: "56px 24px 24px" } },
+        React.createElement("div", { style: { marginBottom: 24 } },
+          React.createElement("div", { style: { fontSize: 13, letterSpacing: 2.5, textTransform: "uppercase", color: "#86c26c", fontWeight: 600, marginBottom: 4 } }, "Plan Ahead"),
+          React.createElement("h2", { style: { fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 700, margin: 0, color: "#f0f7ec" } }, "Your Week")
+        ),
+        React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } },
+          weeklyWeather.map(function(w, idx) {
+            var isToday = w.day === todayIdx;
+            var dayDate = new Date(today);
+            dayDate.setDate(today.getDate() - todayIdx + (w.day >= todayIdx ? w.day : w.day + 7));
+            var dayKey = dayDate.toISOString().split("T")[0];
+            var logged = weekLog[dayKey];
+            return React.createElement("div", { key: idx, style: Object.assign({}, cardStyle, {
+              background: isToday ? "rgba(134,194,108,0.08)" : cardStyle.background,
+              border: isToday ? "1px solid rgba(134,194,108,0.25)" : cardStyle.border,
+            }) },
+              React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
+                React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 14 } },
+                  React.createElement("div", { style: { textAlign: "center", minWidth: 44 } },
+                    React.createElement("div", { style: { fontSize: 24 } }, w.icon),
+                    React.createElement("div", { style: { fontSize: 11, color: "#6b7a60", marginTop: 2 } }, w.high + "\u00B0/" + w.low + "\u00B0")
+                  ),
+                  React.createElement("div", null,
+                    React.createElement("div", { style: { fontSize: 15, fontWeight: 600, color: "#e8efe4" } }, isToday ? "Today" : FULL_DAYS[w.day]),
+                    React.createElement("div", { style: { fontSize: 12, color: "#8a9a7e" } }, w.condition)
+                  )
+                ),
+                React.createElement("div", null,
+                  logged ? React.createElement("div", { style: { fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, background: "rgba(134,194,108,0.2)", color: "#86c26c" } }, "\u2713 Done") :
+                  w.good ? React.createElement("div", { style: { fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, background: "rgba(134,194,108,0.1)", color: "#86c26c" } }, "\uD83D\uDEB6 Walk") :
+                  React.createElement("div", { style: { fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, background: "rgba(194,140,108,0.1)", color: "#c2946c" } }, "\uD83C\uDFE0 Indoor")
+                )
+              )
+            );
+          })
+        ),
+        React.createElement("div", { style: {
+          marginTop: 20, background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)",
+          borderRadius: 16, padding: 18, textAlign: "center",
+        } },
+          React.createElement("div", { style: { fontSize: 11, fontWeight: 600, color: "#86c26c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 } }, "Week at a Glance"),
+          React.createElement("div", { style: { fontSize: 14, color: "#a8c89a", lineHeight: 1.5 } }, weeklyWeather.filter(function(w) { return w.good; }).length + " outdoor days \u00B7 " + weeklyWeather.filter(function(w) { return !w.good; }).length + " indoor days"),
+          React.createElement("div", { style: { fontSize: 13, color: "#6b7a60", marginTop: 4 } }, "Complete every day for " + (weeklyWeather.length * duration) + " min this week")
+        )
+      )
+    ),
+
+    /* ═══════════ BOTTOM NAV ═══════════ */
+    React.createElement("div", { style: {
+      position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
+      width: "100%", maxWidth: 390, padding: "12px 24px 28px",
+      background: "linear-gradient(to top, #0a160a 60%, transparent)",
+      display: "flex", justifyContent: "space-around",
+    } },
+      [
+        { icon: "\uD83C\uDFE0", label: "Today", s: "home" },
+        { icon: "\uD83D\uDCC5", label: "Week", s: "week" },
+        { icon: "\u2699\uFE0F", label: "Settings", s: "settings" },
+      ].map(function(item, i) {
+        return React.createElement("button", { key: i, onClick: function() {
+          if (item.s === "settings") { setShowSettings(!showSettings); setScreen("home"); }
+          else if (item.s === "home" && screen === "home") { /* already home */ }
+          else { setScreen(item.s); }
+        }, style: {
+          background: "none", border: "none", cursor: "pointer", textAlign: "center", padding: "6px 16px",
+        } },
+          React.createElement("div", { style: { fontSize: 22, marginBottom: 2 } }, item.icon),
+          React.createElement("div", { style: {
+            fontSize: 10, fontWeight: 600, letterSpacing: 0.5,
+            color: (screen === item.s || (item.s === "home" && (screen === "detail" || screen === "indoor" || screen === "indoor_done" || screen === "checkin_done"))) ? "#86c26c" : "#4a5a40",
+          } }, item.label)
+        );
+      })
+    )
+  );
+}
+
+/* ═══════════════════════════════════════
+   APP ROOT (Auth listener)
+   ═══════════════════════════════════════ */
+function App() {
+  var userState = useState(null);
+  var currentUser = userState[0];
+  var setCurrentUser = userState[1];
+  var loadingState = useState(true);
+  var loading = loadingState[0];
+  var setLoading = loadingState[1];
+  var installPromptState = useState(null);
+  var installPrompt = installPromptState[0];
+  var setInstallPrompt = installPromptState[1];
+
+  useEffect(function() {
+    if (firebaseReady && auth) {
+      var unsubscribe = auth.onAuthStateChanged(function(u) {
+        if (u) {
+          var providerIds = u.providerData.map(function(p) { return p.providerId; });
+          setCurrentUser({
+            uid: u.uid,
+            email: u.email,
+            displayName: u.displayName,
+            provider: providerIds.includes("google.com") ? "google" : "email",
           });
         } else {
-          var saved = localStorage.getItem("stepout_user");
-          if (saved) try { setUser(JSON.parse(saved)); } catch(e) {}
-          setLoading(false);
+          setCurrentUser(null);
         }
-      }, []);
-
-      if (loading) return (
-        <div style={{...pageWrap, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ textAlign: "center" }}><div style={{ fontSize: 48, marginBottom: 16 }}>🚶‍♀️</div><div style={{ color: "#86c26c", fontSize: 16, fontWeight: 600 }}>Loading...</div></div>
-        </div>
-      );
-
-      if (!user) return <WelcomeScreen onLogin={function(u) { setUser(u); localStorage.setItem("stepout_user", JSON.stringify(u)); }} />;
-
-      return <StepOutApp user={user} onLogout={function() {
-        if (firebaseReady && auth) auth.signOut().catch(function() {});
-        localStorage.removeItem("stepout_user");
-        setUser(null);
-      }} />;
+        setLoading(false);
+      });
+      return function() { unsubscribe(); };
+    } else {
+      setLoading(false);
     }
+  }, []);
 
-    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
-  </script>
+  // PWA install prompt
+  useEffect(function() {
+    function handler(e) {
+      e.preventDefault();
+      setInstallPrompt(e);
+    }
+    window.addEventListener("beforeinstallprompt", handler);
+    return function() { window.removeEventListener("beforeinstallprompt", handler); };
+  }, []);
+
+  if (loading) {
+    return React.createElement("div", { style: {
+      maxWidth: 390, margin: "0 auto", minHeight: "100vh",
+      background: "linear-gradient(170deg, #1a2e1a 0%, #0f1f0f 40%, #0a160a 100%)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+    } },
+      React.createElement("div", { className: "pulse", style: { textAlign: "center", color: "#86c26c" } },
+        React.createElement("div", { style: { fontSize: 48, marginBottom: 12 } }, "\uD83D\uDEB6\u200D\u2640\uFE0F"),
+        React.createElement("div", { style: { fontSize: 16, fontWeight: 600 } }, "Loading...")
+      )
+    );
+  }
+
+  if (!currentUser) {
+    return React.createElement(WelcomeScreen, { onAuth: setCurrentUser });
+  }
+
+  return React.createElement(React.Fragment, null,
+    React.createElement(StepOutApp, { user: currentUser }),
+    /* Install prompt */
+    installPrompt && React.createElement("div", { style: {
+      position: "fixed", bottom: 80, left: "50%", transform: "translateX(-50%)",
+      maxWidth: 350, width: "calc(100% - 48px)", background: "#1a2e1a",
+      border: "1px solid rgba(134,194,108,0.3)", borderRadius: 16, padding: 16,
+      boxShadow: "0 8px 32px rgba(0,0,0,0.5)", zIndex: 200, textAlign: "center",
+    } },
+      React.createElement("div", { style: { fontSize: 14, fontWeight: 600, color: "#e8efe4", marginBottom: 8 } }, "Add StepOut to your Home Screen?"),
+      React.createElement("div", { style: { fontSize: 12, color: "#8a9a7e", marginBottom: 12 } }, "Quick access, works offline, feels like a real app."),
+      React.createElement("div", { style: { display: "flex", gap: 8 } },
+        React.createElement("button", { onClick: function() { installPrompt.prompt(); setInstallPrompt(null); }, style: {
+          flex: 1, padding: "10px 0", borderRadius: 10, border: "none", cursor: "pointer",
+          background: "linear-gradient(135deg, #86c26c, #6ba352)", color: "#0a160a",
+          fontSize: 13, fontWeight: 700, fontFamily: "inherit",
+        } }, "Install"),
+        React.createElement("button", { onClick: function() { setInstallPrompt(null); }, style: {
+          flex: 1, padding: "10px 0", borderRadius: 10, cursor: "pointer",
+          background: "none", border: "1px solid rgba(255,255,255,0.1)",
+          color: "#5a6a50", fontSize: 13, fontFamily: "inherit",
+        } }, "Not now")
+      )
+    )
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));
+</script>
 </body>
 </html>
