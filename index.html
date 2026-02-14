@@ -3,54 +3,46 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>StepOut Daily — Walk More. Live Longer.</title>
-  <meta name="description" content="StepOut Daily helps you build a daily walking habit with smart weather-based scheduling, streak tracking, and longevity insights. Free forever." />
+  <title>StepOut Daily — Walk More, Live Longer</title>
+  <meta name="description" content="A longevity-focused walking and wellness app. Schedule walks, track streaks, and build habits that add years to your life." />
   <meta name="theme-color" content="#0a160a" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="StepOut Daily" />
 
-  <!-- Open Graph / Social -->
-  <meta property="og:title" content="StepOut Daily — Walk More. Live Longer." />
-  <meta property="og:description" content="Build a daily walking habit with smart weather-based scheduling, streak tracking, and longevity insights." />
+  <!-- Open Graph -->
+  <meta property="og:title" content="StepOut Daily — Walk More, Live Longer" />
+  <meta property="og:description" content="A longevity-focused walking and wellness app." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://stepoutdaily.com" />
 
-  <!-- Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
+  <!-- PWA Manifest (inline via data URI) -->
+  <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiU3RlcE91dCBEYWlseSIsInNob3J0X25hbWUiOiJTdGVwT3V0Iiwic3RhcnRfdXJsIjoiLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwiYmFja2dyb3VuZF9jb2xvciI6IiMwYTE2MGEiLCJ0aGVtZV9jb2xvciI6IiMwYTE2MGEiLCJpY29ucyI6W119" />
 
-  <!-- Firebase SDK (for Google Sign-In and data storage) -->
-  <script crossorigin src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script crossorigin src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script crossorigin src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js" crossorigin></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js" crossorigin></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js" crossorigin></script>
 
   <!-- React -->
-  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+  <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
 
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      background: #0a160a;
-      font-family: 'Instrument Sans', 'Avenir Next', system-ui, sans-serif;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      overflow-x: hidden;
-    }
-    #root { min-height: 100vh; }
-    /* Hide scrollbar on weather strip */
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { background: #0a160a; overflow-x: hidden; }
+    html { scroll-behavior: smooth; }
     ::-webkit-scrollbar { display: none; }
-    /* Smooth taps on mobile */
-    button, a { -webkit-tap-highlight-color: transparent; }
-    /* Input focus ring */
-    input:focus { border-color: rgba(134,194,108,0.5) !important; }
+    input { font-family: inherit; }
+    input::placeholder { color: #5a6a50; }
   </style>
 </head>
 <body>
   <div id="root"></div>
 
   <script>
-    // Initialize Firebase (with fallback if SDK not yet loaded)
+    // ── Firebase Init ──
     var auth = null;
     var db = null;
     var firebaseReady = false;
@@ -62,14 +54,12 @@
           projectId: "stepout-daily",
           storageBucket: "stepout-daily.firebasestorage.app",
           messagingSenderId: "817332362346",
-          appId: "1:817332362346:web:99264c2ab36ebf36817e13",
+          appId: "1:817332362346:web:99264c2ab36ebf36817e13"
         });
         auth = firebase.auth();
         db = firebase.firestore();
         firebaseReady = true;
         console.log("Firebase initialized successfully");
-      } else {
-        console.log("Firebase SDK not loaded - running in offline mode");
       }
     } catch(e) {
       console.log("Firebase init error - running in offline mode:", e.message);
@@ -79,19 +69,21 @@
   <script type="text/babel">
     const { useState, useEffect, useCallback } = React;
 
-    /* ───────── CONSTANTS ───────── */
-    const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const FULL_DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    /* ═══════════════════════════════════════════
+       DATA
+    ═══════════════════════════════════════════ */
+    const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    const FULL_DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 
     const INDOOR_ACTIVITIES = [
       { name: "Squat & Breathe Circuit", howTo: "Do 3 rounds of: 10 air squats (sit back like into an invisible chair, stand back up), then 1 minute of slow deep breathing. Rest 30 seconds between rounds. Finish with 2 minutes of gentle marching in place to cool down.", tip: "Squats strengthen the muscles that keep you mobile and independent as you age. Pairing them with breathwork lowers your heart rate and builds recovery capacity.", duration: "10 min", icon: "\u{1F9B5}" },
       { name: "Wall Push-up & Hold Routine", howTo: "Do 3 rounds of: 10 wall push-ups (stand arm's length from a wall, lean in and push back), then hold a wall plank (lean toward the wall with arms straight) for 30 seconds. Rest 45 seconds between rounds. Finish with 2 minutes of gentle shoulder rolls and arm circles.", tip: "Upper body strength is linked to lower all-cause mortality. Short routines done consistently beat occasional intense workouts.", duration: "10 min", icon: "\u{1F4AA}" },
       { name: "Balance & Mobility Flow", howTo: "Start with 60 seconds balancing on each foot (hold a counter for safety). Then do 10 slow leg swings on each side. Repeat the balance holds for 60 seconds each. Finish with 3 minutes of slow walking in a figure-eight pattern around your room, focusing on smooth heel-to-toe steps.", tip: "The ability to stand on one leg for 10+ seconds is strongly correlated with longevity in adults over 50. Practicing balance daily can dramatically reduce fall risk.", duration: "10 min", icon: "\u{1F9D8}" },
-      { name: "Sit-to-Stand Challenge", howTo: "Sit in a sturdy chair with arms crossed over your chest. Stand all the way up, then sit back down \u2014 that's one rep. Do 10 reps, rest 1 minute. Repeat for 4 rounds total. Between rounds, do gentle quad stretches by pulling one foot behind you while holding the chair. Track your reps to watch your progress over time.", tip: "How many times you can stand from a chair in 30 seconds predicts your functional fitness for the next decade. This exercise directly trains that ability.", duration: "10 min", icon: "\u{1FA91}" },
-      { name: "Grip & Hang Practice", howTo: "Find a sturdy door frame or overhead ledge. Hang with both hands for as long as you can (even 10 seconds is great), then rest 1 minute. Do 5 rounds. Between hangs, squeeze a rolled-up towel as hard as you can for 20 seconds with each hand. End with 2 minutes of wrist circles and finger stretches.", tip: "Grip strength is one of the strongest predictors of longevity. Doctors increasingly use it as a quick health screening tool.", duration: "10 min", icon: "\u{1F932}" },
-      { name: "Lunge & Walk Circuit", howTo: "Do 5 walking lunges on each leg (take a big step forward, lower your back knee, push off and repeat). Then walk around the room at a brisk pace for 2 minutes. Repeat this cycle 3 times. Hold onto a wall during lunges if you need balance support. Cool down with 1 minute of standing calf stretches.", tip: "Single-leg exercises improve balance and prevent falls \u2014 the #1 cause of injury-related death in older adults.", duration: "10 min", icon: "\u{1F6B6}" },
-      { name: "Guided Breathwork Session", howTo: "Sit or lie down comfortably. Round 1 (3 min): Box breathing \u2014 breathe in 4 seconds, hold 4, out 4, hold 4. Round 2 (3 min): Extended exhale \u2014 breathe in 4 seconds, out 8 seconds. Round 3 (3 min): Natural breathing with eyes closed, just noticing each breath. End with 1 minute of gentle neck and shoulder rolls.", tip: "Controlled breathing activates your parasympathetic nervous system, lowering cortisol and inflammation. A 10-minute practice measurably improves heart rate variability.", duration: "10 min", icon: "\u{1F32C}\uFE0F" },
-      { name: "Calf Raise & March Combo", howTo: "Stand behind a chair for balance. Do 20 calf raises (rise onto tiptoes, pause, lower slowly). Then march in place with high knees for 1 minute. Repeat this cycle 4 times. Finish with 1 minute of gentle calf stretches on each side \u2014 place one foot behind you and press the heel into the floor.", tip: "Calf muscles act as a 'second heart,' pumping blood back up from your legs. Strong calves = better circulation and lower risk of blood clots.", duration: "10 min", icon: "\u{1F9B6}" },
+      { name: "Sit-to-Stand Challenge", howTo: "Sit in a sturdy chair with arms crossed over your chest. Stand all the way up, then sit back down \u2014 that's one rep. Do 10 reps, rest 1 minute. Repeat for 4 rounds total. Between rounds, do gentle quad stretches.", tip: "How many times you can stand from a chair in 30 seconds predicts your functional fitness for the next decade.", duration: "10 min", icon: "\u{1FA91}" },
+      { name: "Grip & Hang Practice", howTo: "Find a sturdy door frame or overhead ledge. Hang with both hands for as long as you can (even 10 seconds is great), then rest 1 minute. Do 5 rounds. Between hangs, squeeze a rolled-up towel as hard as you can for 20 seconds with each hand.", tip: "Grip strength is one of the strongest predictors of longevity. Doctors increasingly use it as a quick health screening tool.", duration: "10 min", icon: "\u{1F932}" },
+      { name: "Lunge & Walk Circuit", howTo: "Do 5 walking lunges on each leg. Then walk around the room at a brisk pace for 2 minutes. Repeat this cycle 3 times. Hold onto a wall during lunges if you need balance support.", tip: "Single-leg exercises improve balance and prevent falls \u2014 the #1 cause of injury-related death in older adults.", duration: "10 min", icon: "\u{1F6B6}" },
+      { name: "Guided Breathwork Session", howTo: "Sit or lie down comfortably. Round 1 (3 min): Box breathing \u2014 breathe in 4 seconds, hold 4, out 4, hold 4. Round 2 (3 min): Extended exhale \u2014 breathe in 4 seconds, out 8 seconds. Round 3 (3 min): Natural breathing with eyes closed.", tip: "Controlled breathing activates your parasympathetic nervous system, lowering cortisol and inflammation.", duration: "10 min", icon: "\u{1F32C}\u{FE0F}" },
+      { name: "Calf Raise & March Combo", howTo: "Stand behind a chair for balance. Do 20 calf raises (rise onto tiptoes, pause, lower slowly). Then march in place with high knees for 1 minute. Repeat this cycle 4 times.", tip: "Calf muscles act as a 'second heart,' pumping blood back up from your legs. Strong calves = better circulation.", duration: "10 min", icon: "\u{1F9B6}" },
     ];
 
     const LONGEVITY_QUOTES = [
@@ -100,9 +92,6 @@
       "Morning sunlight exposure helps regulate cortisol and improves sleep quality.",
       "Even a 10-minute walk after meals significantly improves blood sugar regulation.",
       "People who spend 120+ minutes per week in nature report significantly better health.",
-      "A daily 15-minute walk reduces the risk of depression by 26%.",
-      "Walking speed is one of the strongest predictors of longevity in older adults.",
-      "Regular walkers have 30% lower risk of cardiovascular events.",
     ];
 
     const STREAK_MESSAGES = [
@@ -123,659 +112,1273 @@
       { mins: 300, label: "300+ min/week \u2014 maximum longevity benefits. You're in the top tier." },
     ];
 
-    /* ───────── WEATHER UTILITIES (NOAA API) ───────── */
-    const WEATHER_ICONS = {
-      "Sunny": "\u2600\uFE0F", "Clear": "\u2600\uFE0F", "Mostly Clear": "\u2600\uFE0F",
-      "Partly Cloudy": "\u26C5", "Mostly Cloudy": "\u26C5",
-      "Cloudy": "\u2601\uFE0F", "Overcast": "\u2601\uFE0F",
-      "Rain": "\u{1F327}\uFE0F", "Light Rain": "\u{1F327}\uFE0F", "Heavy Rain": "\u{1F327}\uFE0F", "Showers": "\u{1F327}\uFE0F",
-      "Chance Rain Showers": "\u{1F326}\uFE0F", "Slight Chance Rain Showers": "\u{1F326}\uFE0F",
-      "Thunderstorms": "\u26C8\uFE0F", "Chance Thunderstorms": "\u26C8\uFE0F",
-      "Snow": "\u{1F328}\uFE0F", "Light Snow": "\u{1F328}\uFE0F", "Heavy Snow": "\u{1F328}\uFE0F",
-      "Fog": "\u{1F32B}\uFE0F", "Haze": "\u{1F32B}\uFE0F",
-      "Wind": "\u{1F4A8}", "Breezy": "\u{1F4A8}", "Windy": "\u{1F4A8}",
-    };
-
-    function getWeatherIcon(condition) {
-      if (!condition) return "\u{1F324}\uFE0F";
-      for (const [key, icon] of Object.entries(WEATHER_ICONS)) {
-        if (condition.toLowerCase().includes(key.toLowerCase())) return icon;
-      }
-      return "\u{1F324}\uFE0F";
+    function getRandomActivity() {
+      return INDOOR_ACTIVITIES[Math.floor(Math.random() * INDOOR_ACTIVITIES.length)];
     }
 
-    function isGoodWeather(condition, temp, windSpeed) {
-      if (!condition) return true;
-      const lc = condition.toLowerCase();
-      const bad = ["rain", "thunder", "storm", "snow", "ice", "sleet", "hail", "blizzard"];
-      if (bad.some(w => lc.includes(w))) return false;
-      if (temp !== undefined && (temp < 32 || temp > 100)) return false;
-      if (windSpeed !== undefined && windSpeed > 25) return false;
-      return true;
-    }
-
-    async function fetchNOAAWeather(lat, lon) {
+    /* ═══════════════════════════════════════════
+       FIRESTORE HELPERS
+    ═══════════════════════════════════════════ */
+    async function saveUserData(userId, data) {
+      if (!firebaseReady || !db) return;
       try {
-        const pointRes = await fetch(`https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`, {
-          headers: { "User-Agent": "StepOutDaily/1.0 (contact@stepoutdaily.com)" }
+        await db.collection('users').doc(userId).set(data, { merge: true });
+      } catch(e) { console.log("Firestore save error:", e.message); }
+    }
+
+    async function loadUserData(userId) {
+      if (!firebaseReady || !db) return null;
+      try {
+        const doc = await db.collection('users').doc(userId).get();
+        return doc.exists ? doc.data() : null;
+      } catch(e) { console.log("Firestore load error:", e.message); return null; }
+    }
+
+    /* ═══════════════════════════════════════════
+       NOAA WEATHER API
+    ═══════════════════════════════════════════ */
+    async function fetchWeather(lat, lon) {
+      try {
+        const pointRes = await fetch(`https://api.weather.gov/points/${lat},${lon}`, {
+          headers: { 'User-Agent': 'StepOutDaily/1.0 (contact@stepoutdaily.com)' }
         });
-        if (!pointRes.ok) throw new Error("Could not get weather grid point");
         const pointData = await pointRes.json();
         const forecastUrl = pointData.properties.forecast;
         const hourlyUrl = pointData.properties.forecastHourly;
+
         const [forecastRes, hourlyRes] = await Promise.all([
-          fetch(forecastUrl, { headers: { "User-Agent": "StepOutDaily/1.0 (contact@stepoutdaily.com)" } }),
-          fetch(hourlyUrl, { headers: { "User-Agent": "StepOutDaily/1.0 (contact@stepoutdaily.com)" } }),
+          fetch(forecastUrl, { headers: { 'User-Agent': 'StepOutDaily/1.0' } }),
+          fetch(hourlyUrl, { headers: { 'User-Agent': 'StepOutDaily/1.0' } })
         ]);
-        if (!forecastRes.ok || !hourlyRes.ok) throw new Error("Could not fetch forecasts");
         const forecastData = await forecastRes.json();
         const hourlyData = await hourlyRes.json();
-        const hourlyPeriods = hourlyData.properties.periods.slice(0, 14);
-        const hourlyWeather = hourlyPeriods
-          .filter(p => { const pDate = new Date(p.startTime); return pDate.getHours() >= 7 && pDate.getHours() <= 18; })
-          .slice(0, 11)
-          .map(p => {
-            const pDate = new Date(p.startTime);
-            const hour = pDate.getHours();
-            const ampm = hour >= 12 ? "PM" : "AM";
-            const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-            return { time: `${displayHour}:00 ${ampm}`, temp: p.temperature, condition: p.shortForecast, icon: getWeatherIcon(p.shortForecast), windMph: parseInt(p.windSpeed) || 0, good: isGoodWeather(p.shortForecast, p.temperature, parseInt(p.windSpeed)) };
-          });
-        const dayPeriods = forecastData.properties.periods.filter(p => p.isDaytime);
-        const nightPeriods = forecastData.properties.periods.filter(p => !p.isDaytime);
-        const weeklyWeather = dayPeriods.slice(0, 7).map((day, i) => {
-          const pDate = new Date(day.startTime);
-          return { day: pDate.getDay(), high: day.temperature, low: nightPeriods[i] ? nightPeriods[i].temperature : day.temperature - 15, condition: day.shortForecast, icon: getWeatherIcon(day.shortForecast), good: isGoodWeather(day.shortForecast, day.temperature, parseInt(day.windSpeed)), date: pDate };
-        });
-        return { hourlyWeather, weeklyWeather, locationName: pointData.properties.relativeLocation?.properties?.city || "Your Area" };
-      } catch (err) { console.error("NOAA weather fetch failed:", err); return null; }
-    }
-
-    function getFallbackWeather() {
-      const today = new Date(); const todayIdx = today.getDay();
-      const hourlyWeather = [];
-      for (let h = 7; h <= 17; h++) {
-        const ampm = h >= 12 ? "PM" : "AM"; const displayHour = h > 12 ? h - 12 : h;
-        hourlyWeather.push({ time: `${displayHour}:00 ${ampm}`, temp: Math.round(55 + Math.random() * 15), condition: ["Sunny", "Partly Cloudy", "Cloudy"][Math.floor(Math.random() * 3)], icon: ["\u2600\uFE0F", "\u26C5", "\u2601\uFE0F"][Math.floor(Math.random() * 3)], windMph: Math.round(3 + Math.random() * 10), good: true });
+        return { forecast: forecastData, hourly: hourlyData };
+      } catch(e) {
+        console.log("Weather fetch error:", e.message);
+        return null;
       }
-      const weeklyWeather = [];
-      for (let d = 0; d < 7; d++) {
-        const dayIdx = (todayIdx + d) % 7; const good = Math.random() > 0.25;
-        weeklyWeather.push({ day: dayIdx, high: Math.round(55 + Math.random() * 20), low: Math.round(38 + Math.random() * 12), condition: good ? "Partly Cloudy" : "Rain", icon: good ? "\u26C5" : "\u{1F327}\uFE0F", good });
+    }
+
+    function getWeatherIcon(shortForecast) {
+      const f = (shortForecast || "").toLowerCase();
+      if (f.includes("thunder")) return "\u26C8\uFE0F";
+      if (f.includes("rain") || f.includes("shower")) return "\u{1F327}\uFE0F";
+      if (f.includes("snow")) return "\u{1F328}\uFE0F";
+      if (f.includes("cloud") && f.includes("partly")) return "\u26C5";
+      if (f.includes("cloud") || f.includes("overcast")) return "\u2601\uFE0F";
+      if (f.includes("fog")) return "\u{1F32B}\uFE0F";
+      if (f.includes("wind")) return "\u{1F32C}\uFE0F";
+      return "\u2600\uFE0F";
+    }
+
+    function isGoodWeather(shortForecast) {
+      const f = (shortForecast || "").toLowerCase();
+      return !f.includes("thunder") && !f.includes("heavy rain") && !f.includes("snow") && !f.includes("storm");
+    }
+
+    /* ═══════════════════════════════════════════
+       WELCOME / AUTH SCREEN
+    ═══════════════════════════════════════════ */
+    function WelcomeScreen({ onLogin }) {
+      const [mode, setMode] = useState("welcome"); // welcome, login, signup
+      const [email, setEmail] = useState("");
+      const [password, setPassword] = useState("");
+      const [name, setName] = useState("");
+      const [error, setError] = useState("");
+      const [loading, setLoading] = useState(false);
+
+      const inputStyle = {
+        width: "100%", padding: "14px 16px", borderRadius: 12,
+        background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)",
+        color: "#e8efe4", fontSize: 15, fontFamily: "inherit", outline: "none",
+        marginBottom: 12,
+      };
+
+      const primaryBtn = {
+        width: "100%", padding: "16px 0", borderRadius: 14, border: "none",
+        background: "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)",
+        color: "#0a160a", fontSize: 16, fontWeight: 700, cursor: "pointer",
+        fontFamily: "inherit", boxShadow: "0 4px 24px rgba(134,194,108,0.3)",
+        marginBottom: 12,
+      };
+
+      const googleBtn = {
+        width: "100%", padding: "16px 0", borderRadius: 14, cursor: "pointer",
+        background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.15)",
+        color: "#e8efe4", fontSize: 15, fontWeight: 600, fontFamily: "inherit",
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+        marginBottom: 12,
+      };
+
+      async function handleGoogleSignIn() {
+        setError("");
+        setLoading(true);
+        if (firebaseReady && auth) {
+          try {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            const result = await auth.signInWithPopup(provider);
+            onLogin({ uid: result.user.uid, email: result.user.email, name: result.user.displayName, provider: "google" });
+          } catch(e) {
+            setError(e.message);
+            setLoading(false);
+          }
+        } else {
+          // Offline fallback
+          const offlineUser = { uid: "offline_" + Date.now(), email: "guest@stepoutdaily.com", name: "Guest User", provider: "offline" };
+          localStorage.setItem("stepout_user", JSON.stringify(offlineUser));
+          onLogin(offlineUser);
+        }
       }
-      return { hourlyWeather, weeklyWeather, locationName: "Your Area" };
+
+      async function handleEmailSignUp() {
+        if (!email || !password) { setError("Please enter email and password"); return; }
+        if (password.length < 6) { setError("Password must be at least 6 characters"); return; }
+        setError("");
+        setLoading(true);
+        if (firebaseReady && auth) {
+          try {
+            const result = await auth.createUserWithEmailAndPassword(email, password);
+            if (name) await result.user.updateProfile({ displayName: name });
+            onLogin({ uid: result.user.uid, email: result.user.email, name: name || email, provider: "email" });
+          } catch(e) {
+            setError(e.code === "auth/email-already-in-use" ? "An account with this email already exists. Try signing in instead." : e.message);
+            setLoading(false);
+          }
+        } else {
+          const offlineUser = { uid: "offline_" + Date.now(), email: email, name: name || email, provider: "offline" };
+          localStorage.setItem("stepout_user", JSON.stringify(offlineUser));
+          onLogin(offlineUser);
+        }
+      }
+
+      async function handleEmailSignIn() {
+        if (!email || !password) { setError("Please enter email and password"); return; }
+        setError("");
+        setLoading(true);
+        if (firebaseReady && auth) {
+          try {
+            const result = await auth.signInWithEmailAndPassword(email, password);
+            onLogin({ uid: result.user.uid, email: result.user.email, name: result.user.displayName || email, provider: "email" });
+          } catch(e) {
+            setError(e.code === "auth/wrong-password" ? "Incorrect password. Please try again." : e.code === "auth/user-not-found" ? "No account found with this email. Try creating one." : e.message);
+            setLoading(false);
+          }
+        } else {
+          const offlineUser = { uid: "offline_" + Date.now(), email: email, name: email, provider: "offline" };
+          localStorage.setItem("stepout_user", JSON.stringify(offlineUser));
+          onLogin(offlineUser);
+        }
+      }
+
+      // ── Welcome Screen ──
+      if (mode === "welcome") {
+        return (
+          <div style={{
+            maxWidth: 390, margin: "0 auto", minHeight: "100vh",
+            background: "linear-gradient(170deg, #1a2e1a 0%, #0f1f0f 40%, #0a160a 100%)",
+            fontFamily: "'Instrument Sans', 'Avenir Next', system-ui, sans-serif",
+            color: "#e8efe4", display: "flex", flexDirection: "column", alignItems: "center",
+            justifyContent: "center", padding: "40px 28px", position: "relative", overflow: "hidden",
+          }}>
+            <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
+
+            {/* Ambient glow */}
+            <div style={{ position: "absolute", top: -80, right: -80, width: 260, height: 260, background: "radial-gradient(circle, rgba(134,194,108,0.15) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" }} />
+            <div style={{ position: "absolute", bottom: 80, left: -60, width: 200, height: 200, background: "radial-gradient(circle, rgba(194,168,108,0.1) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" }} />
+
+            {/* Logo area */}
+            <div style={{ fontSize: 64, marginBottom: 16 }}>{"\u{1F6B6}\u200D\u2640\uFE0F"}</div>
+            <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 42, fontWeight: 700, margin: "0 0 4px", color: "#f0f7ec", textAlign: "center" }}>
+              Step<span style={{ color: "#86c26c" }}>Out</span>
+            </h1>
+            <div style={{ fontSize: 16, color: "#86c26c", fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>Daily</div>
+            <div style={{ fontSize: 16, color: "#8a9a7e", textAlign: "center", lineHeight: 1.5, marginBottom: 40, maxWidth: 280 }}>
+              Walk more. Live longer. Build daily habits that add years to your life.
+            </div>
+
+            {/* Google Sign In - Primary */}
+            <button onClick={handleGoogleSignIn} disabled={loading} style={{...googleBtn, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)"}}>
+              <svg width="20" height="20" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+              Continue with Google
+            </button>
+
+            {/* Divider */}
+            <div style={{ display: "flex", alignItems: "center", gap: 16, width: "100%", margin: "8px 0 20px" }}>
+              <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.1)" }} />
+              <span style={{ fontSize: 12, color: "#5a6a50" }}>or</span>
+              <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.1)" }} />
+            </div>
+
+            {/* Create Account */}
+            <button onClick={() => setMode("signup")} style={primaryBtn}>
+              Create an Account
+            </button>
+
+            {/* Sign In link */}
+            <button onClick={() => setMode("login")} style={{
+              background: "none", border: "none", color: "#86c26c", fontSize: 14,
+              fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: "8px 0",
+            }}>
+              Already have an account? Sign In
+            </button>
+
+            {/* Terms */}
+            <div style={{ fontSize: 11, color: "#4a5a40", textAlign: "center", marginTop: 24, lineHeight: 1.5, maxWidth: 280 }}>
+              By continuing, you agree to our{" "}
+              <a href="/terms" style={{ color: "#6b7a60", textDecoration: "underline" }}>Terms of Service</a>
+              {" "}and{" "}
+              <a href="/privacy" style={{ color: "#6b7a60", textDecoration: "underline" }}>Privacy Policy</a>
+            </div>
+          </div>
+        );
+      }
+
+      // ── Sign Up Form ──
+      if (mode === "signup") {
+        return (
+          <div style={{
+            maxWidth: 390, margin: "0 auto", minHeight: "100vh",
+            background: "linear-gradient(170deg, #1a2e1a 0%, #0f1f0f 40%, #0a160a 100%)",
+            fontFamily: "'Instrument Sans', 'Avenir Next', system-ui, sans-serif",
+            color: "#e8efe4", padding: "60px 28px", position: "relative",
+          }}>
+            <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
+
+            <button onClick={() => { setMode("welcome"); setError(""); }} style={{
+              background: "none", border: "none", color: "#86c26c", fontSize: 14, fontWeight: 600,
+              cursor: "pointer", fontFamily: "inherit", padding: 0, marginBottom: 32,
+            }}>{"\u2190"} Back</button>
+
+            <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, color: "#f0f7ec", marginBottom: 6 }}>Create Your Account</h2>
+            <p style={{ fontSize: 14, color: "#8a9a7e", marginBottom: 28 }}>Start your longevity journey today</p>
+
+            <input type="text" placeholder="Your Name (optional)" value={name} onChange={e => setName(e.target.value)} style={inputStyle} />
+            <input type="email" placeholder="Email Address" value={email} onChange={e => setEmail(e.target.value)} style={inputStyle} />
+            <input type="password" placeholder="Password (6+ characters)" value={password} onChange={e => setPassword(e.target.value)} style={inputStyle} />
+
+            {error && <div style={{ color: "#e07060", fontSize: 13, marginBottom: 12, padding: "10px 14px", background: "rgba(224,112,96,0.1)", borderRadius: 10 }}>{error}</div>}
+
+            <button onClick={handleEmailSignUp} disabled={loading} style={{...primaryBtn, opacity: loading ? 0.6 : 1}}>
+              {loading ? "Creating Account..." : "Create Account"}
+            </button>
+
+            {/* Google option */}
+            <button onClick={handleGoogleSignIn} disabled={loading} style={googleBtn}>
+              <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+              Or continue with Google
+            </button>
+
+            <button onClick={() => { setMode("login"); setError(""); }} style={{
+              background: "none", border: "none", color: "#86c26c", fontSize: 14,
+              fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: "8px 0", width: "100%",
+            }}>
+              Already have an account? Sign In
+            </button>
+          </div>
+        );
+      }
+
+      // ── Login Form ──
+      return (
+        <div style={{
+          maxWidth: 390, margin: "0 auto", minHeight: "100vh",
+          background: "linear-gradient(170deg, #1a2e1a 0%, #0f1f0f 40%, #0a160a 100%)",
+          fontFamily: "'Instrument Sans', 'Avenir Next', system-ui, sans-serif",
+          color: "#e8efe4", padding: "60px 28px", position: "relative",
+        }}>
+          <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
+
+          <button onClick={() => { setMode("welcome"); setError(""); }} style={{
+            background: "none", border: "none", color: "#86c26c", fontSize: 14, fontWeight: 600,
+            cursor: "pointer", fontFamily: "inherit", padding: 0, marginBottom: 32,
+          }}>{"\u2190"} Back</button>
+
+          <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, color: "#f0f7ec", marginBottom: 6 }}>Welcome Back</h2>
+          <p style={{ fontSize: 14, color: "#8a9a7e", marginBottom: 28 }}>Sign in to continue your streak</p>
+
+          <input type="email" placeholder="Email Address" value={email} onChange={e => setEmail(e.target.value)} style={inputStyle} />
+          <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} style={inputStyle} />
+
+          {error && <div style={{ color: "#e07060", fontSize: 13, marginBottom: 12, padding: "10px 14px", background: "rgba(224,112,96,0.1)", borderRadius: 10 }}>{error}</div>}
+
+          <button onClick={handleEmailSignIn} disabled={loading} style={{...primaryBtn, opacity: loading ? 0.6 : 1}}>
+            {loading ? "Signing In..." : "Sign In"}
+          </button>
+
+          <button onClick={handleGoogleSignIn} disabled={loading} style={googleBtn}>
+            <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+            Or continue with Google
+          </button>
+
+          <button onClick={() => { setMode("signup"); setError(""); }} style={{
+            background: "none", border: "none", color: "#86c26c", fontSize: 14,
+            fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: "8px 0", width: "100%",
+          }}>
+            Don't have an account? Create One
+          </button>
+        </div>
+      );
     }
 
-    /* ───────── LOCAL STORAGE HELPERS ───────── */
-    function saveLocal(key, data) { try { localStorage.setItem(`stepout_${key}`, JSON.stringify(data)); } catch(e) {} }
-    function loadLocal(key, fallback) { try { const d = localStorage.getItem(`stepout_${key}`); return d ? JSON.parse(d) : fallback; } catch(e) { return fallback; } }
+    /* ═══════════════════════════════════════════
+       ADD TO HOME SCREEN PROMPT
+    ═══════════════════════════════════════════ */
+    function InstallPrompt({ onDismiss }) {
+      const [isIOS, setIsIOS] = useState(false);
+      const [isAndroid, setIsAndroid] = useState(false);
 
-    /* ───────── FIRESTORE HELPERS ───────── */
-    async function saveToFirestore(userId, key, data) {
-      if (!firebaseReady || !db) return;
-      try { await db.collection("users").doc(userId).set({ [key]: data }, { merge: true }); } catch(e) { console.log("Firestore save failed:", e); }
+      useEffect(() => {
+        const ua = navigator.userAgent || "";
+        setIsIOS(/iPad|iPhone|iPod/.test(ua));
+        setIsAndroid(/Android/.test(ua));
+      }, []);
+
+      // Only show on mobile
+      if (!isIOS && !isAndroid) return null;
+
+      return (
+        <div style={{
+          position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
+          width: "100%", maxWidth: 390, zIndex: 1000,
+          background: "linear-gradient(to top, #1a2e1a 80%, transparent)",
+          padding: "40px 24px 32px",
+        }}>
+          <div style={{
+            background: "rgba(134,194,108,0.1)", border: "1px solid rgba(134,194,108,0.25)",
+            borderRadius: 20, padding: 20,
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#86c26c" }}>
+                {"\u{1F4F1}"} Add StepOut to Your Home Screen
+              </div>
+              <button onClick={onDismiss} style={{
+                background: "none", border: "none", color: "#5a6a50", fontSize: 18, cursor: "pointer", padding: 0, lineHeight: 1,
+              }}>{"\u00D7"}</button>
+            </div>
+
+            {isIOS ? (
+              <div style={{ fontSize: 13, color: "#a8c89a", lineHeight: 1.6 }}>
+                <div style={{ marginBottom: 8 }}>
+                  <strong style={{ color: "#e8efe4" }}>Step 1:</strong> Tap the Share button{" "}
+                  <span style={{ fontSize: 16 }}>{"\u{1F4E4}"}</span> at the bottom of your screen
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <strong style={{ color: "#e8efe4" }}>Step 2:</strong> Scroll down and tap <strong style={{ color: "#e8efe4" }}>"Add to Home Screen"</strong>
+                </div>
+                <div>
+                  <strong style={{ color: "#e8efe4" }}>Step 3:</strong> Tap <strong style={{ color: "#e8efe4" }}>"Add"</strong> in the top right corner
+                </div>
+              </div>
+            ) : (
+              <div style={{ fontSize: 13, color: "#a8c89a", lineHeight: 1.6 }}>
+                <div style={{ marginBottom: 8 }}>
+                  <strong style={{ color: "#e8efe4" }}>Step 1:</strong> Tap the menu{" "}
+                  <span style={{ fontSize: 14 }}>{"\u22EE"}</span> (three dots) in the top right corner
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <strong style={{ color: "#e8efe4" }}>Step 2:</strong> Tap <strong style={{ color: "#e8efe4" }}>"Add to Home screen"</strong> or <strong style={{ color: "#e8efe4" }}>"Install app"</strong>
+                </div>
+                <div>
+                  <strong style={{ color: "#e8efe4" }}>Step 3:</strong> Tap <strong style={{ color: "#e8efe4" }}>"Add"</strong> to confirm
+                </div>
+              </div>
+            )}
+
+            <div style={{ fontSize: 11, color: "#5a6a50", marginTop: 12 }}>
+              This lets you open StepOut Daily like a regular app!
+            </div>
+          </div>
+        </div>
+      );
     }
-    async function loadFromFirestore(userId) {
-      if (!firebaseReady || !db) return null;
-      try { const doc = await db.collection("users").doc(userId).get(); return doc.exists ? doc.data() : null; } catch(e) { console.log("Firestore load failed:", e); return null; }
-    }
 
-    /* ───────── GOOGLE CALENDAR ───────── */
-    function createGoogleCalendarUrl(title, date, durationMinutes, description) {
-      const startDate = new Date(date); const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
-      const formatDate = (d) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-      const params = new URLSearchParams({ action: "TEMPLATE", text: title, dates: `${formatDate(startDate)}/${formatDate(endDate)}`, details: description, sf: "true" });
-      return `https://calendar.google.com/calendar/render?${params.toString()}`;
-    }
-
-    /* ───────── HELPER FUNCTIONS ───────── */
-    function getRandomActivity() { return INDOOR_ACTIVITIES[Math.floor(Math.random() * INDOOR_ACTIVITIES.length)]; }
-
-    function getSuggestions(hourlyWeather, calendarEvents, duration) {
-      if (!hourlyWeather || hourlyWeather.length === 0) return [];
-      const slots = [];
-      hourlyWeather.forEach((weather) => {
-        slots.push({ time: weather.time, weather, score: weather.good ? (weather.condition.includes("Sunny") || weather.condition.includes("Clear") ? 3 : 2) : 0, isOutdoor: weather.good });
-      });
-      return slots.sort((a, b) => b.score - a.score);
-    }
-
-    function getStreakMessage(streak) { return STREAK_MESSAGES.find(s => streak >= s.min && streak <= s.max)?.msg || ""; }
-    function getTodayKey() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
-    function getWeekStartKey() { const d = new Date(); const dow = d.getDay(); const start = new Date(d); start.setDate(d.getDate() - dow); return `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,"0")}-${String(start.getDate()).padStart(2,"0")}`; }
-
-    /* ═══════════════════════════════════════════════════════════════
-       MAIN APP
-       ═══════════════════════════════════════════════════════════════ */
-    function StepOutApp() {
-      const [screen, setScreen] = useState("home");
-      const [fadeIn, setFadeIn] = useState(true);
-      const [user, setUser] = useState(loadLocal("user", null));
-      const [authScreen, setAuthScreen] = useState("login");
-      const [authEmail, setAuthEmail] = useState("");
-      const [authPassword, setAuthPassword] = useState("");
-      const [authName, setAuthName] = useState("");
-      const [authError, setAuthError] = useState("");
-      const [authLoading, setAuthLoading] = useState(false);
-      const [duration, setDuration] = useState(loadLocal("duration", 30));
-      const [showSettings, setShowSettings] = useState(false);
-      const [hourlyWeather, setHourlyWeather] = useState([]);
-      const [weeklyWeather, setWeeklyWeather] = useState([]);
-      const [locationName, setLocationName] = useState("");
-      const [weatherLoading, setWeatherLoading] = useState(true);
-      const [locationError, setLocationError] = useState(false);
-      const [suggestions, setSuggestions] = useState([]);
-      const [selectedSlot, setSelectedSlot] = useState(null);
-      const [confirmed, setConfirmed] = useState(false);
-      const [indoorActivity, setIndoorActivity] = useState(getRandomActivity());
-      const weekKey = getWeekStartKey();
-      const [streak, setStreak] = useState(loadLocal("streak", 0));
-      const [weekLog, setWeekLog] = useState(loadLocal(`weekLog_${weekKey}`, {}));
-      const [weeklyMins, setWeeklyMins] = useState(loadLocal(`weeklyMins_${weekKey}`, 0));
-      const [lastActivityDate, setLastActivityDate] = useState(loadLocal("lastActivityDate", null));
-      const [missedWalk, setMissedWalk] = useState(false);
-      const [scheduledWalk, setScheduledWalk] = useState(null);
-      const [checkInVisible, setCheckInVisible] = useState(false);
-      const [checkInResult, setCheckInResult] = useState(null);
-      const [dailyQuote] = useState(LONGEVITY_QUOTES[Math.floor(Math.random() * LONGEVITY_QUOTES.length)]);
-
+    /* ═══════════════════════════════════════════
+       MAIN APP (after login)
+    ═══════════════════════════════════════════ */
+    function StepOutApp({ user, onLogout }) {
       const today = new Date();
       const todayIdx = today.getDay();
       const dayName = FULL_DAYS[todayIdx];
       const dateStr = today.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+
+      const [screen, setScreen] = useState("home");
+      const [duration, setDuration] = useState(30);
+      const [selectedSlot, setSelectedSlot] = useState(null);
+      const [confirmed, setConfirmed] = useState(false);
+      const [indoorActivity, setIndoorActivity] = useState(getRandomActivity());
+      const [showSettings, setShowSettings] = useState(false);
+      const [fadeIn, setFadeIn] = useState(true);
+      const [dailyQuote] = useState(LONGEVITY_QUOTES[Math.floor(Math.random() * LONGEVITY_QUOTES.length)]);
+      const [showInstall, setShowInstall] = useState(false);
+      const [showProfile, setShowProfile] = useState(false);
+
+      // Streak & progress
+      const [streak, setStreak] = useState(0);
+      const [weekLog, setWeekLog] = useState({});
+      const [weeklyMins, setWeeklyMins] = useState(0);
+      const [missedWalk, setMissedWalk] = useState(false);
+
+      // Weather
+      const [hourlyWeather, setHourlyWeather] = useState([]);
+      const [weeklyWeather, setWeeklyWeather] = useState([]);
+      const [weatherLoading, setWeatherLoading] = useState(true);
+      const [locationError, setLocationError] = useState(false);
+
+      // Check-in
+      const [scheduledWalk, setScheduledWalk] = useState(null);
+      const [checkInVisible, setCheckInVisible] = useState(false);
+      const [checkInResult, setCheckInResult] = useState(null);
+
+      // Show install prompt after delay on mobile
+      useEffect(() => {
+        const dismissed = localStorage.getItem("stepout_install_dismissed");
+        if (!dismissed) {
+          const timer = setTimeout(() => setShowInstall(true), 5000);
+          return () => clearTimeout(timer);
+        }
+      }, []);
+
+      // Load user data
+      useEffect(() => {
+        async function loadData() {
+          // Try Firestore first, then localStorage
+          let data = null;
+          if (user.provider !== "offline") {
+            data = await loadUserData(user.uid);
+          }
+          if (!data) {
+            const local = localStorage.getItem("stepout_data_" + user.uid);
+            if (local) data = JSON.parse(local);
+          }
+          if (data) {
+            if (data.streak) setStreak(data.streak);
+            if (data.weekLog) setWeekLog(data.weekLog);
+            if (data.weeklyMins) setWeeklyMins(data.weeklyMins);
+            if (data.duration) setDuration(data.duration);
+          }
+        }
+        loadData();
+      }, [user]);
+
+      // Save data when it changes
+      useEffect(() => {
+        const data = { streak, weekLog, weeklyMins, duration, lastUpdated: new Date().toISOString() };
+        localStorage.setItem("stepout_data_" + user.uid, JSON.stringify(data));
+        if (user.provider !== "offline") {
+          saveUserData(user.uid, data);
+        }
+      }, [streak, weekLog, weeklyMins, duration]);
+
+      // Fetch weather
+      useEffect(() => {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+              const lat = pos.coords.latitude.toFixed(4);
+              const lon = pos.coords.longitude.toFixed(4);
+              const weatherData = await fetchWeather(lat, lon);
+              if (weatherData && weatherData.hourly) {
+                const now = new Date();
+                const periods = weatherData.hourly.properties.periods || [];
+                const todayHours = periods.filter(p => {
+                  const d = new Date(p.startTime);
+                  return d.getDate() === now.getDate() && d.getHours() >= 7 && d.getHours() <= 17;
+                }).map(p => ({
+                  time: new Date(p.startTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+                  temp: p.temperature,
+                  condition: p.shortForecast,
+                  icon: getWeatherIcon(p.shortForecast),
+                  windMph: p.windSpeed ? parseInt(p.windSpeed) : 0,
+                  good: isGoodWeather(p.shortForecast),
+                }));
+                setHourlyWeather(todayHours.length > 0 ? todayHours : getMockHourly());
+              } else {
+                setHourlyWeather(getMockHourly());
+              }
+              if (weatherData && weatherData.forecast) {
+                const periods = weatherData.forecast.properties.periods || [];
+                const days = periods.filter(p => p.isDaytime).slice(0, 7).map((p, i) => ({
+                  day: (todayIdx + i) % 7,
+                  high: p.temperature,
+                  low: periods[i*2+1] ? periods[i*2+1].temperature : p.temperature - 15,
+                  condition: p.shortForecast,
+                  icon: getWeatherIcon(p.shortForecast),
+                  good: isGoodWeather(p.shortForecast),
+                }));
+                setWeeklyWeather(days.length > 0 ? days : getMockWeekly());
+              } else {
+                setWeeklyWeather(getMockWeekly());
+              }
+              setWeatherLoading(false);
+            },
+            () => {
+              setLocationError(true);
+              setHourlyWeather(getMockHourly());
+              setWeeklyWeather(getMockWeekly());
+              setWeatherLoading(false);
+            },
+            { timeout: 10000 }
+          );
+        } else {
+          setHourlyWeather(getMockHourly());
+          setWeeklyWeather(getMockWeekly());
+          setWeatherLoading(false);
+        }
+      }, []);
+
+      function getMockHourly() {
+        return [
+          { time: "7:00 AM", temp: 52, condition: "Partly Cloudy", icon: "\u26C5", windMph: 4, good: true },
+          { time: "8:00 AM", temp: 55, condition: "Sunny", icon: "\u2600\uFE0F", windMph: 3, good: true },
+          { time: "9:00 AM", temp: 59, condition: "Sunny", icon: "\u2600\uFE0F", windMph: 5, good: true },
+          { time: "10:00 AM", temp: 63, condition: "Sunny", icon: "\u2600\uFE0F", windMph: 6, good: true },
+          { time: "11:00 AM", temp: 66, condition: "Partly Cloudy", icon: "\u26C5", windMph: 8, good: true },
+          { time: "12:00 PM", temp: 68, condition: "Cloudy", icon: "\u2601\uFE0F", windMph: 10, good: true },
+          { time: "1:00 PM", temp: 67, condition: "Rain", icon: "\u{1F327}\uFE0F", windMph: 15, good: false },
+          { time: "2:00 PM", temp: 64, condition: "Rain", icon: "\u{1F327}\uFE0F", windMph: 18, good: false },
+          { time: "3:00 PM", temp: 62, condition: "Cloudy", icon: "\u2601\uFE0F", windMph: 12, good: true },
+          { time: "4:00 PM", temp: 60, condition: "Partly Cloudy", icon: "\u26C5", windMph: 7, good: true },
+          { time: "5:00 PM", temp: 57, condition: "Clear", icon: "\u{1F305}", windMph: 4, good: true },
+        ];
+      }
+
+      function getMockWeekly() {
+        return [
+          { day: 0, high: 62, low: 45, condition: "Sunny", icon: "\u2600\uFE0F", good: true },
+          { day: 1, high: 58, low: 42, condition: "Partly Cloudy", icon: "\u26C5", good: true },
+          { day: 2, high: 55, low: 40, condition: "Rain", icon: "\u{1F327}\uFE0F", good: false },
+          { day: 3, high: 50, low: 38, condition: "Thunderstorms", icon: "\u26C8\uFE0F", good: false },
+          { day: 4, high: 60, low: 43, condition: "Cloudy", icon: "\u2601\uFE0F", good: true },
+          { day: 5, high: 65, low: 47, condition: "Sunny", icon: "\u2600\uFE0F", good: true },
+          { day: 6, high: 63, low: 46, condition: "Partly Cloudy", icon: "\u26C5", good: true },
+        ];
+      }
+
+      // Compute suggestions from hourly weather
+      const suggestions = hourlyWeather.filter(w => w.good).map(w => ({
+        time: w.time, weather: w, score: w.condition.includes("Sunny") ? 3 : 2, isOutdoor: true,
+      })).concat(hourlyWeather.filter(w => !w.good).map(w => ({
+        time: w.time, weather: w, score: 0, isOutdoor: false,
+      }))).sort((a, b) => b.score - a.score);
+
       const bestOutdoor = suggestions.find(s => s.isOutdoor);
-      const streakMsg = getStreakMessage(streak);
+
+      useEffect(() => {
+        setFadeIn(false);
+        const t = setTimeout(() => setFadeIn(true), 50);
+        return () => clearTimeout(t);
+      }, [screen]);
+
+      const streakMsg = STREAK_MESSAGES.find(s => streak >= s.min && streak <= s.max)?.msg || "";
       const currentMilestone = [...HEALTH_MILESTONES].reverse().find(m => weeklyMins >= m.mins);
       const nextMilestone = HEALTH_MILESTONES.find(m => m.mins > weeklyMins);
       const daysCompleted = Object.keys(weekLog).length;
       const progressPct = Math.round((daysCompleted / 7) * 100);
-      const todayLogged = weekLog[todayIdx] !== undefined;
 
-      // Check streak continuity
-      useEffect(() => {
-        const todayKey = getTodayKey();
-        if (lastActivityDate && lastActivityDate !== todayKey) {
-          const lastDate = new Date(lastActivityDate); const todayDate = new Date(todayKey);
-          const diffDays = Math.floor((todayDate - lastDate) / (1000 * 60 * 60 * 24));
-          if (diffDays > 1) { setStreak(0); saveLocal("streak", 0); }
-        }
-      }, []);
-
-      // Listen for Firebase auth state changes
-      useEffect(() => {
-        if (!firebaseReady || !auth) return;
-        const unsubscribe = auth.onAuthStateChanged((fbUser) => {
-          if (fbUser) {
-            const userData = { email: fbUser.email, name: fbUser.displayName || fbUser.email.split("@")[0], uid: fbUser.uid, photoURL: fbUser.photoURL };
-            setUser(userData);
-            saveLocal("user", userData);
-            // Load data from Firestore
-            loadFromFirestore(fbUser.uid).then(data => {
-              if (data) {
-                if (data.streak !== undefined) setStreak(data.streak);
-                if (data.weekLog) setWeekLog(data.weekLog);
-                if (data.weeklyMins !== undefined) setWeeklyMins(data.weeklyMins);
-                if (data.duration) setDuration(data.duration);
-                if (data.lastActivityDate) setLastActivityDate(data.lastActivityDate);
-              }
-            });
-          }
-        });
-        return () => unsubscribe();
-      }, []);
-
-      // Fetch weather
-      useEffect(() => {
-        async function loadWeather() {
-          setWeatherLoading(true);
-          try {
-            const position = await new Promise((resolve, reject) => { navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000, enableHighAccuracy: false }); });
-            const { latitude, longitude } = position.coords;
-            const weather = await fetchNOAAWeather(latitude, longitude);
-            if (weather) { setHourlyWeather(weather.hourlyWeather); setWeeklyWeather(weather.weeklyWeather); setLocationName(weather.locationName); setLocationError(false); }
-            else throw new Error("NOAA fetch failed");
-          } catch (err) {
-            console.log("Using fallback weather:", err.message);
-            const fallback = getFallbackWeather();
-            setHourlyWeather(fallback.hourlyWeather); setWeeklyWeather(fallback.weeklyWeather); setLocationName(fallback.locationName); setLocationError(true);
-          }
-          setWeatherLoading(false);
-        }
-        loadWeather();
-      }, []);
-
-      useEffect(() => { setSuggestions(getSuggestions(hourlyWeather, [], duration)); }, [hourlyWeather, duration]);
-      useEffect(() => { setFadeIn(false); const t = setTimeout(() => setFadeIn(true), 50); return () => clearTimeout(t); }, [screen]);
-      useEffect(() => { saveLocal("duration", duration); }, [duration]);
-      useEffect(() => { saveLocal("streak", streak); }, [streak]);
-      useEffect(() => { saveLocal(`weekLog_${weekKey}`, weekLog); }, [weekLog]);
-      useEffect(() => { saveLocal(`weeklyMins_${weekKey}`, weeklyMins); }, [weeklyMins]);
-
-      // Sync to Firestore when data changes
-      useEffect(() => {
-        if (user && user.uid && !user.uid.startsWith("user_")) {
-          saveToFirestore(user.uid, "streak", streak);
-          saveToFirestore(user.uid, "weekLog", weekLog);
-          saveToFirestore(user.uid, "weeklyMins", weeklyMins);
-          saveToFirestore(user.uid, "duration", duration);
-          saveToFirestore(user.uid, "lastActivityDate", lastActivityDate);
-        }
-      }, [streak, weekLog, weeklyMins, duration, lastActivityDate]);
-
-      /* ── AUTH HANDLERS ── */
-      function handleLogin(e) {
-        e.preventDefault(); setAuthLoading(true); setAuthError("");
-        if (!authEmail || !authPassword) { setAuthError("Please enter your email and password."); setAuthLoading(false); return; }
-        if (firebaseReady && auth) {
-          auth.signInWithEmailAndPassword(authEmail, authPassword)
-            .then(() => { setAuthLoading(false); setScreen("home"); })
-            .catch(err => { setAuthError(err.message.includes("wrong-password") ? "Incorrect password." : err.message.includes("user-not-found") ? "No account found. Please sign up first." : "Login failed. Please try again."); setAuthLoading(false); });
-        } else {
-          // Offline mode fallback
-          const accounts = loadLocal("accounts", {});
-          const account = accounts[authEmail.toLowerCase()];
-          if (!account) { setAuthError("No account found. Please sign up first."); setAuthLoading(false); return; }
-          if (account.password !== authPassword) { setAuthError("Incorrect password."); setAuthLoading(false); return; }
-          const userData = { email: authEmail.toLowerCase(), name: account.name, uid: account.uid };
-          setUser(userData); saveLocal("user", userData); setAuthLoading(false); setScreen("home");
-        }
-      }
-
-      function handleSignup(e) {
-        e.preventDefault(); setAuthLoading(true); setAuthError("");
-        if (!authName || !authEmail || !authPassword) { setAuthError("Please fill in all fields."); setAuthLoading(false); return; }
-        if (authPassword.length < 6) { setAuthError("Password must be at least 6 characters."); setAuthLoading(false); return; }
-        if (firebaseReady && auth) {
-          auth.createUserWithEmailAndPassword(authEmail, authPassword)
-            .then((result) => result.user.updateProfile({ displayName: authName }))
-            .then(() => { setAuthLoading(false); setScreen("home"); })
-            .catch(err => { setAuthError(err.message.includes("already-in-use") ? "An account with this email already exists." : "Signup failed. Please try again."); setAuthLoading(false); });
-        } else {
-          // Offline mode fallback
-          const accounts = loadLocal("accounts", {});
-          if (accounts[authEmail.toLowerCase()]) { setAuthError("An account with this email already exists."); setAuthLoading(false); return; }
-          const uid = "user_" + Date.now();
-          accounts[authEmail.toLowerCase()] = { name: authName, password: authPassword, uid };
-          saveLocal("accounts", accounts);
-          const userData = { email: authEmail.toLowerCase(), name: authName, uid };
-          setUser(userData); saveLocal("user", userData); setAuthLoading(false); setScreen("home");
-        }
-      }
-
-      async function handleGoogleSignIn() {
-        setAuthLoading(true); setAuthError("");
-        if (firebaseReady && auth) {
-          try {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            await auth.signInWithPopup(provider);
-            setAuthLoading(false); setScreen("home");
-          } catch (err) {
-            setAuthError("Google sign-in failed. Please try again or use email instead.");
-            setAuthLoading(false);
-          }
-        } else {
-          setAuthError("Google sign-in requires an internet connection. Please use email sign-in or try again when online.");
-          setAuthLoading(false);
-        }
-      }
-
-      function handleLogout() {
-        if (firebaseReady && auth) { try { auth.signOut(); } catch(e) {} }
-        setUser(null); saveLocal("user", null); setScreen("home"); setShowSettings(false);
-      }
-
-      /* ── ACTIVITY HANDLERS ── */
       function logActivity(type) {
-        if (todayLogged) return;
         const newLog = { ...weekLog, [todayIdx]: type };
-        setWeekLog(newLog); setWeeklyMins(prev => prev + duration); setStreak(prev => prev + 1);
-        setMissedWalk(false); setCheckInVisible(false); setCheckInResult(type);
-        setLastActivityDate(getTodayKey()); saveLocal("lastActivityDate", getTodayKey());
+        setWeekLog(newLog);
+        setWeeklyMins(prev => prev + duration);
+        setStreak(prev => prev + 1);
+        setMissedWalk(false);
+        setCheckInVisible(false);
+        setCheckInResult(type);
       }
 
-      function scheduleWalk(slot) { setScheduledWalk({ time: slot.time, slot }); setConfirmed(true); }
+      function scheduleWalk(slot) {
+        // Create Google Calendar URL
+        const now = new Date();
+        const startHour = parseInt(slot.time);
+        const isPM = slot.time.toLowerCase().includes("pm");
+        let hour24 = isPM && startHour !== 12 ? startHour + 12 : startHour;
+        if (!isPM && startHour === 12) hour24 = 0;
+
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour24, 0);
+        const end = new Date(start.getTime() + duration * 60000);
+
+        const fmt = d => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+        const calUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(duration + "-Min StepOut Walk")}&dates=${fmt(start)}/${fmt(end)}&details=${encodeURIComponent("Your scheduled StepOut Daily walk. Get outside and move!")}`;
+
+        window.open(calUrl, '_blank');
+        setScheduledWalk({ time: slot.time, slot });
+        setConfirmed(true);
+      }
 
       function handleCheckIn(response) {
         if (response === "walk") { logActivity("walk"); setScreen("checkin_done"); }
         else if (response === "indoor") { setCheckInVisible(false); setIndoorActivity(getRandomActivity()); setScreen("indoor"); }
-        else if (response === "skip") { setCheckInVisible(false); setMissedWalk(true); setScreen("home"); }
+        else { setCheckInVisible(false); setMissedWalk(true); setScreen("home"); }
       }
 
-      function openGoogleCalendar(slot) {
-        const now = new Date(); const [timePart, ampm] = slot.time.split(" ");
-        let [hours] = timePart.split(":").map(Number);
-        if (ampm === "PM" && hours !== 12) hours += 12; if (ampm === "AM" && hours === 12) hours = 0;
-        const calDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, 0, 0);
-        const url = createGoogleCalendarUrl(`${duration}-Min StepOut Walk \u{1F6B6}`, calDate, duration, `Your scheduled StepOut Daily walk.\n\n\u{1F324}\uFE0F ${slot.weather.temp}\u00B0 \u00B7 ${slot.weather.condition}\n\nRemember: Every walk adds years to your life!\n\nPowered by StepOut Daily \u2014 stepoutdaily.com`);
-        window.open(url, "_blank");
-      }
+      /* ─── STYLES ─── */
+      const pillStyle = (active) => ({
+        flex: 1, padding: "12px 0", borderRadius: 12, border: "none", cursor: "pointer",
+        fontSize: 15, fontWeight: 600, fontFamily: "inherit",
+        background: active ? "#86c26c" : "rgba(255,255,255,0.06)",
+        color: active ? "#0a160a" : "#8a9a7e", transition: "all 0.2s ease",
+      });
 
-      /* ── WEEKLY PLAN ── */
-      const weekPlan = {};
-      weeklyWeather.forEach(w => { weekPlan[w.day] = w.good ? { type: "walk", time: "10:00 AM", planned: true } : { type: "indoor", time: null, planned: true }; });
+      const cardStyle = {
+        background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)",
+        borderRadius: 16, padding: "16px 18px", marginBottom: 12,
+      };
 
-      const weatherAlert = (() => {
-        const badDays = weeklyWeather.filter(w => !w.good);
-        if (badDays.length > 0) {
-          const dn = FULL_DAYS[badDays[0].day];
-          const nextGood = weeklyWeather.find(w => w.good && weeklyWeather.indexOf(w) > weeklyWeather.indexOf(badDays[0]));
-          if (nextGood) return { show: true, message: `${dn}'s forecast is ${badDays[0].condition.toLowerCase()}`, suggestion: `Move your walk to ${FULL_DAYS[nextGood.day]} morning?` };
-        }
-        return { show: false };
-      })();
-
-      /* ── STYLES ── */
-      const pillStyle = (active) => ({ flex: 1, padding: "12px 0", borderRadius: 12, border: "none", cursor: "pointer", fontSize: 15, fontWeight: 600, fontFamily: "inherit", background: active ? "#86c26c" : "rgba(255,255,255,0.06)", color: active ? "#0a160a" : "#8a9a7e", transition: "all 0.2s ease" });
-      const cardStyle = { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: "16px 18px", marginBottom: 12 };
-      const inputStyle = { width: "100%", padding: "14px 16px", borderRadius: 12, border: "1px solid rgba(134,194,108,0.2)", background: "rgba(255,255,255,0.05)", color: "#e8efe4", fontSize: 15, fontFamily: "inherit", outline: "none", boxSizing: "border-box" };
-      const primaryBtnStyle = { width: "100%", padding: "16px 0", borderRadius: 14, border: "none", background: "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)", color: "#0a160a", fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", letterSpacing: 0.5, boxShadow: "0 4px 24px rgba(134,194,108,0.3)" };
-
-      /* ═══════════ RENDER ═══════════ */
       return (
-        <div style={{ maxWidth: 430, margin: "0 auto", minHeight: "100vh", background: "linear-gradient(170deg, #1a2e1a 0%, #0f1f0f 40%, #0a160a 100%)", fontFamily: "'Instrument Sans', 'Avenir Next', system-ui, sans-serif", color: "#e8efe4", position: "relative", overflow: "hidden" }}>
+        <div style={{
+          maxWidth: 390, margin: "0 auto", minHeight: "100vh",
+          background: "linear-gradient(170deg, #1a2e1a 0%, #0f1f0f 40%, #0a160a 100%)",
+          fontFamily: "'Instrument Sans', 'Avenir Next', system-ui, sans-serif",
+          color: "#e8efe4", position: "relative", overflow: "hidden",
+        }}>
+          <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
+
+          {/* Ambient glows */}
           <div style={{ position: "absolute", top: -80, right: -80, width: 260, height: 260, background: "radial-gradient(circle, rgba(134,194,108,0.12) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" }} />
           <div style={{ position: "absolute", bottom: 100, left: -60, width: 200, height: 200, background: "radial-gradient(circle, rgba(194,168,108,0.08) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" }} />
 
           <div style={{ opacity: fadeIn ? 1 : 0, transition: "opacity 0.3s ease", padding: "0 0 100px 0" }}>
 
-            {/* ═══════ AUTH ═══════ */}
-            {screen === "auth" && (
-              <div style={{ padding: "80px 24px 24px" }}>
-                <div style={{ textAlign: "center", marginBottom: 40 }}>
-                  <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 38, fontWeight: 700, margin: 0, lineHeight: 1.1, color: "#f0f7ec" }}>Step<span style={{ color: "#86c26c" }}>Out</span></h1>
-                  <div style={{ fontSize: 14, color: "#86c26c", fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", marginTop: 4 }}>Daily</div>
-                  <div style={{ fontSize: 14, color: "#8a9a7e", marginTop: 12 }}>Walk more. Live longer. Every day counts.</div>
-                </div>
-                <button onClick={handleGoogleSignIn} disabled={authLoading} style={{ width: "100%", padding: "16px 0", borderRadius: 14, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.95)", color: "#1a1a1a", fontSize: 16, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.15)", opacity: authLoading ? 0.6 : 1 }}>
-                  <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-                  Continue with Google
-                </button>
-                <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
-                  <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.08)" }} />
-                  <div style={{ fontSize: 12, color: "#5a6a50", fontWeight: 500 }}>or use email</div>
-                  <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.08)" }} />
-                </div>
-                <div style={{ display: "flex", gap: 8, marginBottom: 20, background: "rgba(255,255,255,0.04)", borderRadius: 14, padding: 4 }}>
-                  <button onClick={() => { setAuthScreen("login"); setAuthError(""); }} style={pillStyle(authScreen === "login")}>Log In</button>
-                  <button onClick={() => { setAuthScreen("signup"); setAuthError(""); }} style={pillStyle(authScreen === "signup")}>Sign Up</button>
-                </div>
-                <form onSubmit={authScreen === "login" ? handleLogin : handleSignup}>
-                  {authScreen === "signup" && (<div style={{ marginBottom: 14 }}><label style={{ fontSize: 12, color: "#6b7a60", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 6 }}>Your Name</label><input type="text" value={authName} onChange={e => setAuthName(e.target.value)} placeholder="e.g. Carie" style={inputStyle} /></div>)}
-                  <div style={{ marginBottom: 14 }}><label style={{ fontSize: 12, color: "#6b7a60", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 6 }}>Email</label><input type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} placeholder="you@example.com" style={inputStyle} /></div>
-                  <div style={{ marginBottom: 20 }}><label style={{ fontSize: 12, color: "#6b7a60", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", display: "block", marginBottom: 6 }}>Password</label><input type="password" value={authPassword} onChange={e => setAuthPassword(e.target.value)} placeholder="At least 6 characters" style={inputStyle} /></div>
-                  {authError && (<div style={{ background: "rgba(194,108,108,0.1)", border: "1px solid rgba(194,108,108,0.3)", borderRadius: 12, padding: "10px 14px", marginBottom: 16, fontSize: 13, color: "#e0a0a0" }}>{authError}</div>)}
-                  <button type="submit" disabled={authLoading} style={{ width: "100%", padding: "14px 0", borderRadius: 14, cursor: "pointer", background: "rgba(134,194,108,0.1)", border: "1px solid rgba(134,194,108,0.25)", color: "#86c26c", fontSize: 15, fontWeight: 600, fontFamily: "inherit", opacity: authLoading ? 0.6 : 1 }}>
-                    {authLoading ? "Please wait..." : authScreen === "login" ? "Log In with Email" : "Create Account with Email"}
-                  </button>
-                </form>
-                <div style={{ textAlign: "center", marginTop: 20 }}><button onClick={() => setScreen("home")} style={{ background: "none", border: "none", color: "#5a6a50", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>Continue without an account \u2192</button></div>
-                <div style={{ textAlign: "center", marginTop: 32 }}><button onClick={() => setScreen("terms")} style={{ background: "none", border: "none", color: "#4a5a40", fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }}>Terms of Service</button></div>
-              </div>
-            )}
-
-            {/* ═══════ HOME ═══════ */}
+            {/* ═══════════ HOME ═══════════ */}
             {screen === "home" && (
               <div style={{ padding: "56px 24px 24px" }}>
+                {/* Header */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
                   <div>
                     <div style={{ fontSize: 13, letterSpacing: 2.5, textTransform: "uppercase", color: "#86c26c", fontWeight: 600, marginBottom: 4 }}>{dayName}</div>
-                    <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 34, fontWeight: 700, margin: 0, lineHeight: 1.1, color: "#f0f7ec" }}>Step<span style={{ color: "#86c26c" }}>Out</span></h1>
-                    <div style={{ fontSize: 14, color: "#8a9a7e", marginTop: 4 }}>{dateStr}{locationName ? ` \u00B7 ${locationName}` : ""}</div>
+                    <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 34, fontWeight: 700, margin: 0, lineHeight: 1.1, color: "#f0f7ec" }}>
+                      Step<span style={{ color: "#86c26c" }}>Out</span>
+                    </h1>
+                    <div style={{ fontSize: 14, color: "#8a9a7e", marginTop: 4 }}>{dateStr}</div>
                   </div>
-                  <button onClick={() => setShowSettings(!showSettings)} style={{ background: "rgba(134,194,108,0.1)", border: "1px solid rgba(134,194,108,0.2)", borderRadius: 12, width: 42, height: 42, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 18, marginTop: 4 }}>{"\u2699\uFE0F"}</button>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={() => setShowProfile(!showProfile)} style={{
+                      background: "rgba(134,194,108,0.1)", border: "1px solid rgba(134,194,108,0.2)",
+                      borderRadius: 12, width: 42, height: 42, display: "flex", alignItems: "center",
+                      justifyContent: "center", cursor: "pointer", fontSize: 16, marginTop: 4,
+                      color: "#86c26c",
+                    }}>{user.name ? user.name.charAt(0).toUpperCase() : "\u{1F464}"}</button>
+                  </div>
                 </div>
 
-                {locationError && (<div style={{ background: "rgba(194,168,108,0.08)", border: "1px solid rgba(194,168,108,0.15)", borderRadius: 12, padding: "10px 14px", marginBottom: 16, fontSize: 12, color: "#c2a86c" }}>{"\u{1F4CD}"} Using estimated weather. Enable location access for real NOAA weather data for your area.</div>)}
+                {/* Profile dropdown */}
+                {showProfile && (
+                  <div style={{
+                    background: "rgba(20,35,20,0.95)", border: "1px solid rgba(134,194,108,0.2)",
+                    borderRadius: 16, padding: 18, marginBottom: 20,
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+                  }}>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: "#e8efe4", marginBottom: 4 }}>{user.name || "User"}</div>
+                    <div style={{ fontSize: 12, color: "#6b7a60", marginBottom: 14 }}>{user.email}</div>
+
+                    <button onClick={() => setShowSettings(!showSettings)} style={{
+                      width: "100%", padding: "10px 0", borderRadius: 10, cursor: "pointer",
+                      background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+                      color: "#a8c89a", fontSize: 13, fontWeight: 600, fontFamily: "inherit", marginBottom: 8,
+                    }}>{"\u2699\uFE0F"} Settings</button>
+
+                    <button onClick={onLogout} style={{
+                      width: "100%", padding: "10px 0", borderRadius: 10, cursor: "pointer",
+                      background: "rgba(194,108,108,0.1)", border: "1px solid rgba(194,108,108,0.2)",
+                      color: "#c27060", fontSize: 13, fontWeight: 600, fontFamily: "inherit",
+                    }}>Sign Out</button>
+                  </div>
+                )}
+
+                {/* Settings panel */}
+                {showSettings && (
+                  <div style={{
+                    background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)",
+                    borderRadius: 16, padding: 20, marginBottom: 20,
+                  }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#86c26c", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 14 }}>Walk Duration</div>
+                    <div style={{ display: "flex", gap: 10 }}>
+                      {[20, 30, 60].map(d => (
+                        <button key={d} onClick={() => setDuration(d)} style={pillStyle(duration === d)}>{d} min</button>
+                      ))}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#6b7a60", marginTop: 10 }}>Currently set to {duration}-minute walks</div>
+                  </div>
+                )}
 
                 {/* Streak + Progress */}
                 <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
-                  <div style={{ flex: 1, background: "linear-gradient(135deg, rgba(255,160,60,0.12) 0%, rgba(255,120,20,0.05) 100%)", border: "1px solid rgba(255,160,60,0.2)", borderRadius: 16, padding: "16px 14px", textAlign: "center" }}>
+                  <div style={{
+                    flex: 1, background: "linear-gradient(135deg, rgba(255,160,60,0.12) 0%, rgba(255,120,20,0.05) 100%)",
+                    border: "1px solid rgba(255,160,60,0.2)", borderRadius: 16, padding: "16px 14px", textAlign: "center",
+                  }}>
                     <div style={{ fontSize: 32, marginBottom: 2 }}>{"\u{1F525}"}</div>
                     <div style={{ fontSize: 28, fontWeight: 700, color: "#ffa03c", fontFamily: "'Playfair Display', serif" }}>{streak}</div>
                     <div style={{ fontSize: 11, color: "#c49a5c", fontWeight: 600, letterSpacing: 0.5 }}>Day Streak</div>
                   </div>
-                  <div style={{ flex: 2, background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)", borderRadius: 16, padding: "14px 16px" }}>
+                  <div style={{
+                    flex: 2, background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)",
+                    borderRadius: 16, padding: "14px 16px",
+                  }}>
                     <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7a60", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 10 }}>This Week</div>
                     <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-                      {DAYS.map((d, i) => { const status = weekLog[i]; const isToday = i === todayIdx; return (<div key={i} style={{ flex: 1, textAlign: "center" }}><div style={{ fontSize: 10, color: isToday ? "#86c26c" : "#5a6a50", marginBottom: 4, fontWeight: isToday ? 700 : 400 }}>{d}</div><div style={{ width: 28, height: 28, borderRadius: "50%", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, background: status === "walk" ? "rgba(134,194,108,0.25)" : status === "indoor" ? "rgba(194,168,108,0.25)" : isToday ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)", border: isToday ? "2px solid #86c26c" : "1px solid rgba(255,255,255,0.06)" }}>{status === "walk" ? "\u{1F6B6}" : status === "indoor" ? "\u{1F3E0}" : ""}</div></div>); })}
+                      {DAYS.map((d, i) => {
+                        const status = weekLog[i];
+                        const isToday = i === todayIdx;
+                        return (
+                          <div key={i} style={{ flex: 1, textAlign: "center" }}>
+                            <div style={{ fontSize: 10, color: isToday ? "#86c26c" : "#5a6a50", marginBottom: 4, fontWeight: isToday ? 700 : 400 }}>{d}</div>
+                            <div style={{
+                              width: 28, height: 28, borderRadius: "50%", margin: "0 auto",
+                              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13,
+                              background: status === "walk" ? "rgba(134,194,108,0.25)" : status === "indoor" ? "rgba(194,168,108,0.25)" : isToday ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)",
+                              border: isToday ? "2px solid #86c26c" : "1px solid rgba(255,255,255,0.06)",
+                            }}>
+                              {status === "walk" ? "\u{1F6B6}" : status === "indoor" ? "\u{1F3E0}" : ""}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                    <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}><div style={{ height: "100%", width: `${progressPct}%`, borderRadius: 3, background: "linear-gradient(90deg, #86c26c, #a8d98a)", transition: "width 0.5s ease" }} /></div>
+                    <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                      <div style={{
+                        height: "100%", width: `${progressPct}%`, borderRadius: 3,
+                        background: "linear-gradient(90deg, #86c26c, #a8d98a)", transition: "width 0.5s ease",
+                      }} />
+                    </div>
                     <div style={{ fontSize: 11, color: "#6b7a60", marginTop: 6 }}>{daysCompleted}/7 days active</div>
                   </div>
                 </div>
 
-                <div style={{ background: "rgba(255,160,60,0.06)", border: "1px solid rgba(255,160,60,0.12)", borderRadius: 12, padding: "10px 14px", marginBottom: 20, textAlign: "center" }}><div style={{ fontSize: 13, color: "#d4a860", fontStyle: "italic", fontFamily: "'Playfair Display', serif" }}>"{streakMsg}"</div></div>
-
-                {/* Health Impact */}
-                <div style={{ background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)", borderRadius: 16, padding: 18, marginBottom: 20 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: "#86c26c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>{"\u{1F9EC}"} Your Longevity Impact This Week</div>
-                  <div style={{ fontSize: 26, fontWeight: 700, color: "#e8efe4", fontFamily: "'Playfair Display', serif" }}>{weeklyMins} minutes</div>
-                  {currentMilestone && (<div style={{ fontSize: 13, color: "#a8c89a", marginTop: 4, lineHeight: 1.4 }}>{"\u2705"} {currentMilestone.label}</div>)}
-                  {nextMilestone && (<div style={{ fontSize: 12, color: "#6b7a60", marginTop: 6 }}>Next milestone: {nextMilestone.mins} min \u2014 {nextMilestone.mins - weeklyMins} min to go</div>)}
+                {/* Streak motivation */}
+                <div style={{
+                  background: "rgba(255,160,60,0.06)", border: "1px solid rgba(255,160,60,0.12)",
+                  borderRadius: 12, padding: "10px 14px", marginBottom: 20, textAlign: "center",
+                }}>
+                  <div style={{ fontSize: 13, color: "#d4a860", fontStyle: "italic", fontFamily: "'Playfair Display', serif" }}>
+                    "{streakMsg}"
+                  </div>
                 </div>
 
-                {/* Missed Walk */}
-                {missedWalk && !todayLogged && (
-                  <div style={{ background: "linear-gradient(135deg, rgba(194,140,108,0.12) 0%, rgba(194,108,108,0.06) 100%)", border: "1px solid rgba(194,140,108,0.25)", borderRadius: 16, padding: 18, marginBottom: 20 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#c2946c", marginBottom: 6 }}>{"\u2600\uFE0F"} Missed your walk \u2014 no worries!</div>
-                    <div style={{ fontSize: 13, color: "#a89070", lineHeight: 1.5, marginBottom: 14 }}>Don't break your streak. A quick 10-minute indoor activity counts just as much for your body.</div>
-                    <button onClick={() => { setIndoorActivity(getRandomActivity()); setScreen("indoor"); }} style={{ width: "100%", padding: "14px 0", borderRadius: 12, border: "none", cursor: "pointer", background: "linear-gradient(135deg, #c2946c 0%, #a87d52 100%)", color: "#1a1008", fontSize: 14, fontWeight: 700, fontFamily: "inherit" }}>{"\u{1F3E0}"} Do an Indoor Activity Instead</button>
+                {/* Health Impact */}
+                <div style={{
+                  background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)",
+                  borderRadius: 16, padding: 18, marginBottom: 20,
+                }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#86c26c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>
+                    {"\u{1F9EC}"} Your Longevity Impact This Week
                   </div>
-                )}
+                  <div style={{ fontSize: 26, fontWeight: 700, color: "#e8efe4", fontFamily: "'Playfair Display', serif" }}>
+                    {weeklyMins} minutes
+                  </div>
+                  {currentMilestone && <div style={{ fontSize: 13, color: "#a8c89a", marginTop: 4 }}>{"\u2705"} {currentMilestone.label}</div>}
+                  {nextMilestone && <div style={{ fontSize: 12, color: "#6b7a60", marginTop: 6 }}>Next milestone: {nextMilestone.mins} min \u2014 {nextMilestone.mins - weeklyMins} min to go</div>}
+                </div>
 
-                {/* Settings */}
-                {showSettings && (
-                  <div style={{ background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)", borderRadius: 16, padding: 20, marginBottom: 20 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#86c26c", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 14 }}>Walk Duration</div>
-                    <div style={{ display: "flex", gap: 10 }}>{[20, 30, 60].map(d => (<button key={d} onClick={() => setDuration(d)} style={pillStyle(duration === d)}>{d} min</button>))}</div>
-                    <div style={{ fontSize: 12, color: "#6b7a60", marginTop: 10 }}>Currently set to {duration}-minute walks</div>
-                    <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "16px 0" }} />
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#86c26c", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 10 }}>Account</div>
-                    {user ? (
-                      <div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                          {user.photoURL ? (<img src={user.photoURL} alt="" style={{ width: 32, height: 32, borderRadius: "50%", border: "2px solid rgba(134,194,108,0.3)" }} />) : (<div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(134,194,108,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{"\u{1F464}"}</div>)}
-                          <div><div style={{ fontSize: 14, color: "#e8efe4", fontWeight: 600 }}>{user.name}</div><div style={{ fontSize: 12, color: "#6b7a60" }}>{user.email}</div></div>
-                        </div>
-                        <button onClick={handleLogout} style={{ background: "rgba(194,108,108,0.1)", border: "1px solid rgba(194,108,108,0.2)", borderRadius: 10, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, color: "#c29696", width: "100%" }}>Log Out</button>
-                      </div>
-                    ) : (
-                      <button onClick={() => setScreen("auth")} style={{ background: "rgba(134,194,108,0.1)", border: "1px solid rgba(134,194,108,0.2)", borderRadius: 10, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", fontSize: 12, color: "#86c26c", width: "100%" }}>Sign Up / Log In to save your progress</button>
-                    )}
-                    <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "16px 0" }} />
-                    <button onClick={() => setScreen("terms")} style={{ background: "none", border: "none", color: "#5a6a50", fontSize: 12, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", padding: 0 }}>Terms of Service</button>
+                {/* Missed walk banner */}
+                {missedWalk && (
+                  <div style={{
+                    background: "linear-gradient(135deg, rgba(194,140,108,0.12) 0%, rgba(194,108,108,0.06) 100%)",
+                    border: "1px solid rgba(194,140,108,0.25)", borderRadius: 16, padding: 18, marginBottom: 20,
+                  }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#c2946c", marginBottom: 6 }}>
+                      {"\u2600\uFE0F"} You missed your walk \u2014 no worries!
+                    </div>
+                    <div style={{ fontSize: 13, color: "#a89070", lineHeight: 1.5, marginBottom: 14 }}>
+                      Don't break your streak. A quick indoor activity counts just as much for your body.
+                    </div>
+                    <button onClick={() => { setIndoorActivity(getRandomActivity()); setScreen("indoor"); }} style={{
+                      width: "100%", padding: "14px 0", borderRadius: 12, border: "none", cursor: "pointer",
+                      background: "linear-gradient(135deg, #c2946c 0%, #a87d52 100%)",
+                      color: "#1a1008", fontSize: 14, fontWeight: 700, fontFamily: "inherit",
+                    }}>
+                      {"\u{1F3E0}"} Do an Indoor Activity Instead
+                    </button>
                   </div>
                 )}
 
                 {/* Daily insight */}
-                <div style={{ background: "rgba(194,168,108,0.08)", border: "1px solid rgba(194,168,108,0.15)", borderRadius: 16, padding: 18, marginBottom: 20 }}>
+                <div style={{
+                  background: "rgba(194,168,108,0.08)", border: "1px solid rgba(194,168,108,0.15)",
+                  borderRadius: 16, padding: 18, marginBottom: 20,
+                }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: "#c2a86c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>{"\u{1F4A1}"} Daily Longevity Insight</div>
-                  <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontStyle: "italic", fontSize: 14.5, lineHeight: 1.5, color: "#d4c9a8" }}>"{dailyQuote}"</div>
+                  <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontStyle: "italic", fontSize: 14.5, lineHeight: 1.5, color: "#d4c9a8" }}>
+                    "{dailyQuote}"
+                  </div>
                 </div>
 
-                {/* Weather */}
-                {weatherLoading ? (
-                  <div style={{ textAlign: "center", padding: "40px 0", color: "#6b7a60" }}><div style={{ fontSize: 32, marginBottom: 8 }}>{"\u{1F324}\uFE0F"}</div><div style={{ fontSize: 14 }}>Loading weather data...</div></div>
-                ) : (
-                  <>
-                    <div style={{ marginBottom: 24 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: "#6b7a60", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 14 }}>Today's Weather</div>
-                      <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 8, scrollbarWidth: "none" }}>
-                        {hourlyWeather.map((w, i) => (<div key={i} style={{ minWidth: 62, padding: "10px 6px", borderRadius: 14, textAlign: "center", background: w.good ? "rgba(134,194,108,0.08)" : "rgba(194,108,108,0.08)", border: `1px solid ${w.good ? "rgba(134,194,108,0.15)" : "rgba(194,108,108,0.15)"}` }}><div style={{ fontSize: 10, color: "#8a9a7e", marginBottom: 4 }}>{w.time.replace(":00 ", "").toLowerCase()}</div><div style={{ fontSize: 20, marginBottom: 2 }}>{w.icon}</div><div style={{ fontSize: 13, fontWeight: 600, color: "#e8efe4" }}>{w.temp}\u00B0</div></div>))}
+                {/* Hourly weather */}
+                <div style={{ marginBottom: 24 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#6b7a60", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 14 }}>
+                    {weatherLoading ? "Loading Weather..." : locationError ? "Today's Weather (sample)" : "Today's Weather"}
+                  </div>
+                  <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 8, scrollbarWidth: "none" }}>
+                    {hourlyWeather.map((w, i) => (
+                      <div key={i} style={{
+                        minWidth: 62, padding: "10px 6px", borderRadius: 14, textAlign: "center",
+                        background: w.good ? "rgba(134,194,108,0.08)" : "rgba(194,108,108,0.08)",
+                        border: `1px solid ${w.good ? "rgba(134,194,108,0.15)" : "rgba(194,108,108,0.15)"}`,
+                      }}>
+                        <div style={{ fontSize: 10, color: "#8a9a7e", marginBottom: 4 }}>{w.time.replace(":00 ", "").replace(" ", "").toLowerCase()}</div>
+                        <div style={{ fontSize: 20, marginBottom: 2 }}>{w.icon}</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: "#e8efe4" }}>{w.temp}{"\u00B0"}</div>
                       </div>
+                    ))}
+                  </div>
+                  {locationError && (
+                    <div style={{ fontSize: 11, color: "#6b7a60", marginTop: 8 }}>
+                      {"\u{1F4CD}"} Allow location access for your real local weather
                     </div>
+                  )}
+                </div>
 
-                    {bestOutdoor && !todayLogged && (
-                      <div style={{ marginBottom: 20 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: "#6b7a60", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 14 }}>{"\u2B50"} Best Time to Walk</div>
-                        <button onClick={() => { setSelectedSlot(bestOutdoor); setScreen("detail"); }} style={{ width: "100%", background: "linear-gradient(135deg, rgba(134,194,108,0.15) 0%, rgba(134,194,108,0.05) 100%)", border: "1px solid rgba(134,194,108,0.3)", borderRadius: 20, padding: 22, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <div><div style={{ fontSize: 28, fontWeight: 700, color: "#86c26c", fontFamily: "'Playfair Display', serif" }}>{bestOutdoor.time}</div><div style={{ fontSize: 14, color: "#b0c4a4", marginTop: 4 }}>{bestOutdoor.weather.icon} {bestOutdoor.weather.temp}\u00B0 \u00B7 {bestOutdoor.weather.condition} \u00B7 {duration} min walk</div></div>
-                            <div style={{ fontSize: 28, opacity: 0.6 }}>{"\u2192"}</div>
+                {/* Best time card */}
+                {bestOutdoor && (
+                  <div style={{ marginBottom: 20 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#6b7a60", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 14 }}>{"\u2B50"} Best Time to Walk</div>
+                    <button onClick={() => { setSelectedSlot(bestOutdoor); setScreen("detail"); }} style={{
+                      width: "100%", background: "linear-gradient(135deg, rgba(134,194,108,0.15) 0%, rgba(134,194,108,0.05) 100%)",
+                      border: "1px solid rgba(134,194,108,0.3)", borderRadius: 20, padding: 22,
+                      cursor: "pointer", textAlign: "left", fontFamily: "inherit",
+                    }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <div style={{ fontSize: 28, fontWeight: 700, color: "#86c26c", fontFamily: "'Playfair Display', serif" }}>{bestOutdoor.time}</div>
+                          <div style={{ fontSize: 14, color: "#b0c4a4", marginTop: 4 }}>
+                            {bestOutdoor.weather.icon} {bestOutdoor.weather.temp}{"\u00B0"} {"\u00B7"} {bestOutdoor.weather.condition} {"\u00B7"} {duration} min walk
                           </div>
-                        </button>
-                      </div>
-                    )}
-
-                    {todayLogged && (<div style={{ background: "rgba(134,194,108,0.1)", border: "1px solid rgba(134,194,108,0.3)", borderRadius: 16, padding: 20, textAlign: "center", marginBottom: 20 }}><div style={{ fontSize: 36, marginBottom: 8 }}>{"\u2705"}</div><div style={{ fontSize: 17, fontWeight: 700, color: "#86c26c", marginBottom: 4 }}>Today's activity logged!</div><div style={{ fontSize: 13, color: "#8a9a7e" }}>You completed a {weekLog[todayIdx] === "walk" ? "walk" : "indoor activity"} today. Come back tomorrow!</div></div>)}
-
-                    {!todayLogged && (
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: "#6b7a60", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 14 }}>All Available Slots</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                          {suggestions.slice(0, 6).map((s, i) => (<button key={i} onClick={() => { if (s.isOutdoor) { setSelectedSlot(s); setScreen("detail"); } else { setIndoorActivity(getRandomActivity()); setScreen("indoor"); } }} style={{ width: "100%", ...cardStyle, cursor: "pointer", textAlign: "left", fontFamily: "inherit", display: "flex", justifyContent: "space-between", alignItems: "center" }}><div style={{ display: "flex", alignItems: "center", gap: 12 }}><span style={{ fontSize: 22 }}>{s.weather.icon}</span><div><div style={{ fontSize: 15, fontWeight: 600, color: "#e8efe4" }}>{s.time}</div><div style={{ fontSize: 12, color: "#8a9a7e" }}>{s.weather.temp}\u00B0 \u00B7 {s.weather.condition}</div></div></div><div style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, background: s.isOutdoor ? "rgba(134,194,108,0.15)" : "rgba(194,140,108,0.15)", color: s.isOutdoor ? "#86c26c" : "#c2946c" }}>{s.isOutdoor ? "Walk" : "Indoor"}</div></button>))}
                         </div>
+                        <div style={{ fontSize: 28, opacity: 0.6 }}>{"\u2192"}</div>
                       </div>
-                    )}
-                  </>
+                    </button>
+                  </div>
                 )}
+
+                {/* All slots */}
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#6b7a60", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 14 }}>All Available Slots</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {suggestions.slice(0, 6).map((s, i) => (
+                      <button key={i} onClick={() => {
+                        if (s.isOutdoor) { setSelectedSlot(s); setScreen("detail"); }
+                        else { setIndoorActivity(getRandomActivity()); setScreen("indoor"); }
+                      }} style={{
+                        width: "100%", ...cardStyle, cursor: "pointer", textAlign: "left", fontFamily: "inherit",
+                        display: "flex", justifyContent: "space-between", alignItems: "center",
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <span style={{ fontSize: 22 }}>{s.weather.icon}</span>
+                          <div>
+                            <div style={{ fontSize: 15, fontWeight: 600, color: "#e8efe4" }}>{s.time}</div>
+                            <div style={{ fontSize: 12, color: "#8a9a7e" }}>{s.weather.temp}{"\u00B0"} {"\u00B7"} {s.weather.condition}</div>
+                          </div>
+                        </div>
+                        <div style={{
+                          fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8,
+                          background: s.isOutdoor ? "rgba(134,194,108,0.15)" : "rgba(194,140,108,0.15)",
+                          color: s.isOutdoor ? "#86c26c" : "#c2946c",
+                        }}>
+                          {s.isOutdoor ? "Walk" : "Indoor"}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 
-            {/* ═══════ DETAIL ═══════ */}
+            {/* ═══════════ DETAIL ═══════════ */}
             {screen === "detail" && selectedSlot && (
               <div style={{ padding: "56px 24px 24px" }}>
-                <button onClick={() => { setScreen("home"); setConfirmed(false); }} style={{ background: "none", border: "none", color: "#86c26c", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 0, marginBottom: 24 }}>{"\u2190"} Back</button>
+                <button onClick={() => { setScreen("home"); setConfirmed(false); }} style={{
+                  background: "none", border: "none", color: "#86c26c", fontSize: 14, fontWeight: 600,
+                  cursor: "pointer", fontFamily: "inherit", padding: 0, marginBottom: 24,
+                }}>{"\u2190"} Back</button>
+
                 <div style={{ textAlign: "center", padding: "32px 0 24px" }}>
                   <div style={{ fontSize: 56, marginBottom: 12 }}>{selectedSlot.weather.icon}</div>
                   <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 32, fontWeight: 700, margin: 0, color: "#f0f7ec" }}>{selectedSlot.time}</h2>
-                  <div style={{ fontSize: 16, color: "#8a9a7e", marginTop: 8 }}>{selectedSlot.weather.temp}\u00B0 \u00B7 {selectedSlot.weather.condition} \u00B7 Wind {selectedSlot.weather.windMph} mph</div>
+                  <div style={{ fontSize: 16, color: "#8a9a7e", marginTop: 8 }}>
+                    {selectedSlot.weather.temp}{"\u00B0"} {"\u00B7"} {selectedSlot.weather.condition} {"\u00B7"} Wind {selectedSlot.weather.windMph} mph
+                  </div>
                 </div>
-                <div style={{ background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)", borderRadius: 20, padding: 24, marginBottom: 24 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}><div><div style={{ fontSize: 12, color: "#6b7a60", textTransform: "uppercase", letterSpacing: 1 }}>Duration</div><div style={{ fontSize: 20, fontWeight: 700, color: "#e8efe4" }}>{duration} minutes</div></div><div style={{ textAlign: "right" }}><div style={{ fontSize: 12, color: "#6b7a60", textTransform: "uppercase", letterSpacing: 1 }}>Type</div><div style={{ fontSize: 20, fontWeight: 700, color: "#86c26c" }}>Outdoor Walk</div></div></div>
+
+                <div style={{
+                  background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)",
+                  borderRadius: 20, padding: 24, marginBottom: 24,
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+                    <div>
+                      <div style={{ fontSize: 12, color: "#6b7a60", textTransform: "uppercase", letterSpacing: 1 }}>Duration</div>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: "#e8efe4" }}>{duration} minutes</div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: 12, color: "#6b7a60", textTransform: "uppercase", letterSpacing: 1 }}>Type</div>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: "#86c26c" }}>Outdoor Walk</div>
+                    </div>
+                  </div>
                   <div style={{ height: 1, background: "rgba(134,194,108,0.15)", margin: "0 0 16px" }} />
-                  <div style={{ fontSize: 13, color: "#8a9a7e", lineHeight: 1.5 }}>{"\u{1F33F}"} Perfect conditions for a {duration}-minute walk. {selectedSlot.weather.temp < 60 ? "Consider a light jacket." : "Enjoy the warmth!"} Remember to hydrate before heading out.</div>
+                  <div style={{ fontSize: 13, color: "#8a9a7e", lineHeight: 1.5 }}>
+                    {"\u{1F33F}"} Perfect conditions for a {duration}-minute walk. {selectedSlot.weather.temp < 60 ? "Consider a light jacket." : "Enjoy the warmth!"} Remember to hydrate before heading out.
+                  </div>
                 </div>
-                <div style={{ background: "rgba(255,160,60,0.06)", border: "1px solid rgba(255,160,60,0.12)", borderRadius: 12, padding: "12px 16px", marginBottom: 20, display: "flex", alignItems: "center", gap: 12 }}><span style={{ fontSize: 28 }}>{"\u{1F525}"}</span><div><div style={{ fontSize: 14, fontWeight: 700, color: "#ffa03c" }}>Keep your {streak}-day streak alive!</div><div style={{ fontSize: 12, color: "#a08050" }}>Scheduling this walk extends your streak to {streak + 1} days</div></div></div>
+
+                {/* Streak motivator */}
+                <div style={{
+                  background: "rgba(255,160,60,0.06)", border: "1px solid rgba(255,160,60,0.12)",
+                  borderRadius: 12, padding: "12px 16px", marginBottom: 20, display: "flex", alignItems: "center", gap: 12,
+                }}>
+                  <span style={{ fontSize: 28 }}>{"\u{1F525}"}</span>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#ffa03c" }}>Keep your {streak}-day streak alive!</div>
+                    <div style={{ fontSize: 12, color: "#a08050" }}>Scheduling this walk extends your streak to {streak + 1} days</div>
+                  </div>
+                </div>
+
                 {!confirmed ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    <button onClick={() => { openGoogleCalendar(selectedSlot); scheduleWalk(selectedSlot); logActivity("walk"); }} style={{ width: "100%", padding: "18px 0", borderRadius: 16, border: "none", background: "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)", color: "#0a160a", fontSize: 17, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", letterSpacing: 0.5, boxShadow: "0 4px 24px rgba(134,194,108,0.3)" }}>{"\u{1F4C5}"} Add to Google Calendar</button>
-                    <button onClick={() => { scheduleWalk(selectedSlot); logActivity("walk"); }} style={{ width: "100%", padding: "14px 0", borderRadius: 14, cursor: "pointer", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#e8efe4", fontSize: 14, fontWeight: 600, fontFamily: "inherit" }}>{"\u2705"} Just log this walk (no calendar)</button>
+                  <div>
+                    <button onClick={() => { scheduleWalk(selectedSlot); logActivity("walk"); }} style={{
+                      width: "100%", padding: "18px 0", borderRadius: 16, border: "none",
+                      background: "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)",
+                      color: "#0a160a", fontSize: 17, fontWeight: 700, cursor: "pointer",
+                      fontFamily: "inherit", letterSpacing: 0.5,
+                      boxShadow: "0 4px 24px rgba(134,194,108,0.3)", marginBottom: 10,
+                    }}>
+                      {"\u{1F4C5}"} Add to Google Calendar
+                    </button>
+                    <button onClick={() => { logActivity("walk"); setConfirmed(true); }} style={{
+                      width: "100%", padding: "14px 0", borderRadius: 14, cursor: "pointer",
+                      background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+                      color: "#a8c89a", fontSize: 14, fontWeight: 600, fontFamily: "inherit",
+                    }}>
+                      {"\u2705"} Just Log It (no calendar)
+                    </button>
                   </div>
                 ) : (
-                  <div style={{ background: "rgba(134,194,108,0.1)", border: "1px solid rgba(134,194,108,0.3)", borderRadius: 16, padding: 20, textAlign: "center" }}><div style={{ fontSize: 36, marginBottom: 8 }}>{"\u2705"}</div><div style={{ fontSize: 17, fontWeight: 700, color: "#86c26c", marginBottom: 4 }}>Walk Logged!</div><div style={{ fontSize: 13, color: "#8a9a7e" }}>"{duration}-Min StepOut Walk" at {selectedSlot.time}</div><div style={{ fontSize: 14, fontWeight: 600, color: "#ffa03c", marginTop: 10 }}>{"\u{1F525}"} Streak: {streak} days!</div></div>
+                  <div style={{
+                    background: "rgba(134,194,108,0.1)", border: "1px solid rgba(134,194,108,0.3)",
+                    borderRadius: 16, padding: 20, textAlign: "center",
+                  }}>
+                    <div style={{ fontSize: 36, marginBottom: 8 }}>{"\u2705"}</div>
+                    <div style={{ fontSize: 17, fontWeight: 700, color: "#86c26c", marginBottom: 4 }}>Logged!</div>
+                    <div style={{ fontSize: 13, color: "#8a9a7e" }}>"{duration}-Min Walk" at {selectedSlot.time}</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "#ffa03c", marginTop: 10 }}>{"\u{1F525}"} Streak: {streak} days!</div>
+                  </div>
                 )}
-                <div style={{ marginTop: 24, background: "rgba(194,168,108,0.08)", border: "1px solid rgba(194,168,108,0.15)", borderRadius: 16, padding: 18 }}><div style={{ fontSize: 11, fontWeight: 600, color: "#c2a86c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>{"\u{1F9EC}"} Longevity Tip</div><div style={{ fontSize: 13.5, lineHeight: 1.55, color: "#d4c9a8" }}>Walking outdoors in natural light helps regulate your circadian rhythm, which governs everything from hormone production to cellular repair. Morning and late afternoon light are especially beneficial.</div></div>
+
+                <div style={{
+                  marginTop: 24, background: "rgba(194,168,108,0.08)", border: "1px solid rgba(194,168,108,0.15)",
+                  borderRadius: 16, padding: 18,
+                }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#c2a86c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>{"\u{1F9EC}"} Longevity Tip</div>
+                  <div style={{ fontSize: 13.5, lineHeight: 1.55, color: "#d4c9a8" }}>
+                    Walking outdoors in natural light helps regulate your circadian rhythm, which governs everything from hormone production to cellular repair. Morning and late afternoon light are especially beneficial.
+                  </div>
+                </div>
               </div>
             )}
 
-            {/* ═══════ INDOOR ═══════ */}
+            {/* ═══════════ INDOOR ═══════════ */}
             {screen === "indoor" && (
               <div style={{ padding: "56px 24px 24px" }}>
-                <button onClick={() => setScreen("home")} style={{ background: "none", border: "none", color: "#86c26c", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 0, marginBottom: 24 }}>{"\u2190"} Back</button>
+                <button onClick={() => setScreen("home")} style={{
+                  background: "none", border: "none", color: "#86c26c", fontSize: 14, fontWeight: 600,
+                  cursor: "pointer", fontFamily: "inherit", padding: 0, marginBottom: 24,
+                }}>{"\u2190"} Back</button>
+
                 <div style={{ textAlign: "center", padding: "20px 0 28px" }}>
-                  <div style={{ fontSize: 12, letterSpacing: 2.5, textTransform: "uppercase", color: "#c2946c", fontWeight: 600, marginBottom: 12 }}>{"\u{1F327}\uFE0F"} Weather's Not Great \u2014 Stay Active Indoors</div>
+                  <div style={{ fontSize: 12, letterSpacing: 2.5, textTransform: "uppercase", color: "#c2946c", fontWeight: 600, marginBottom: 12 }}>
+                    {"\u{1F327}\uFE0F"} Weather's Not Great \u2014 Stay Active Indoors
+                  </div>
                   <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, margin: 0, color: "#f0f7ec" }}>Indoor Activity</h2>
                 </div>
-                <div style={{ background: "rgba(255,160,60,0.06)", border: "1px solid rgba(255,160,60,0.12)", borderRadius: 12, padding: "12px 16px", marginBottom: 20, display: "flex", alignItems: "center", gap: 12 }}><span style={{ fontSize: 28 }}>{"\u{1F525}"}</span><div><div style={{ fontSize: 14, fontWeight: 700, color: "#ffa03c" }}>Indoor days count too!</div><div style={{ fontSize: 12, color: "#a08050" }}>Complete this to keep your {streak}-day streak going</div></div></div>
-                <div style={{ background: "linear-gradient(135deg, rgba(194,140,108,0.1) 0%, rgba(194,140,108,0.03) 100%)", border: "1px solid rgba(194,140,108,0.2)", borderRadius: 24, padding: 28, textAlign: "center", marginBottom: 20 }}>
+
+                <div style={{
+                  background: "rgba(255,160,60,0.06)", border: "1px solid rgba(255,160,60,0.12)",
+                  borderRadius: 12, padding: "12px 16px", marginBottom: 20, display: "flex", alignItems: "center", gap: 12,
+                }}>
+                  <span style={{ fontSize: 28 }}>{"\u{1F525}"}</span>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#ffa03c" }}>Indoor days count too!</div>
+                    <div style={{ fontSize: 12, color: "#a08050" }}>Complete this to keep your {streak}-day streak going</div>
+                  </div>
+                </div>
+
+                <div style={{
+                  background: "linear-gradient(135deg, rgba(194,140,108,0.1) 0%, rgba(194,140,108,0.03) 100%)",
+                  border: "1px solid rgba(194,140,108,0.2)", borderRadius: 24, padding: 28,
+                  textAlign: "center", marginBottom: 20,
+                }}>
                   <div style={{ fontSize: 52, marginBottom: 12 }}>{indoorActivity.icon}</div>
                   <div style={{ fontSize: 22, fontWeight: 700, color: "#e8efe4", marginBottom: 6, fontFamily: "'Playfair Display', serif" }}>{indoorActivity.name}</div>
-                  <div style={{ display: "inline-block", fontSize: 12, fontWeight: 600, padding: "4px 12px", borderRadius: 8, background: "rgba(194,140,108,0.15)", color: "#c2946c" }}>~{indoorActivity.duration} \u00B7 No equipment needed</div>
-                  <div style={{ marginTop: 16, padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", textAlign: "left" }}>
+                  <div style={{
+                    display: "inline-block", fontSize: 12, fontWeight: 600, padding: "4px 12px",
+                    borderRadius: 8, background: "rgba(194,140,108,0.15)", color: "#c2946c",
+                  }}>
+                    ~{indoorActivity.duration} {"\u00B7"} No equipment needed
+                  </div>
+                  <div style={{
+                    marginTop: 16, padding: "14px 16px", borderRadius: 12,
+                    background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", textAlign: "left",
+                  }}>
                     <div style={{ fontSize: 11, fontWeight: 600, color: "#c2946c", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6 }}>How To Do It</div>
                     <div style={{ fontSize: 13.5, lineHeight: 1.6, color: "#b0bca4" }}>{indoorActivity.howTo}</div>
                   </div>
                 </div>
-                <div style={{ background: "rgba(194,168,108,0.08)", border: "1px solid rgba(194,168,108,0.15)", borderRadius: 16, padding: 18, marginBottom: 20 }}><div style={{ fontSize: 11, fontWeight: 600, color: "#c2a86c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>{"\u{1F9EC}"} Why This Matters for Longevity</div><div style={{ fontSize: 13.5, lineHeight: 1.6, color: "#d4c9a8" }}>{indoorActivity.tip}</div></div>
-                <button onClick={() => setIndoorActivity(getRandomActivity())} style={{ width: "100%", padding: "16px 0", borderRadius: 14, cursor: "pointer", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#e8efe4", fontSize: 15, fontWeight: 600, fontFamily: "inherit", marginBottom: 10 }}>{"\u{1F504}"} Give Me a Different Activity</button>
-                {!todayLogged ? (<button onClick={() => { logActivity("indoor"); setScreen("indoor_done"); }} style={{ width: "100%", padding: "16px 0", borderRadius: 14, cursor: "pointer", background: "linear-gradient(135deg, #c2946c 0%, #a87d52 100%)", border: "none", color: "#1a1008", fontSize: 15, fontWeight: 700, fontFamily: "inherit", boxShadow: "0 4px 20px rgba(194,140,108,0.25)" }}>{"\u2705"} I Did This \u2014 Log It</button>) : (<div style={{ background: "rgba(134,194,108,0.1)", border: "1px solid rgba(134,194,108,0.3)", borderRadius: 12, padding: 14, textAlign: "center", fontSize: 13, color: "#86c26c" }}>{"\u2705"} You've already logged today's activity</div>)}
+
+                <div style={{
+                  background: "rgba(194,168,108,0.08)", border: "1px solid rgba(194,168,108,0.15)",
+                  borderRadius: 16, padding: 18, marginBottom: 20,
+                }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#c2a86c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>{"\u{1F9EC}"} Why This Matters for Longevity</div>
+                  <div style={{ fontSize: 13.5, lineHeight: 1.6, color: "#d4c9a8" }}>{indoorActivity.tip}</div>
+                </div>
+
+                <button onClick={() => setIndoorActivity(getRandomActivity())} style={{
+                  width: "100%", padding: "16px 0", borderRadius: 14, cursor: "pointer",
+                  background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+                  color: "#e8efe4", fontSize: 15, fontWeight: 600, fontFamily: "inherit", marginBottom: 10,
+                }}>{"\u{1F504}"} Give Me a Different Activity</button>
+
+                <button onClick={() => { logActivity("indoor"); setScreen("indoor_done"); }} style={{
+                  width: "100%", padding: "16px 0", borderRadius: 14, cursor: "pointer",
+                  background: "linear-gradient(135deg, #c2946c 0%, #a87d52 100%)",
+                  border: "none", color: "#1a1008", fontSize: 15, fontWeight: 700, fontFamily: "inherit",
+                  boxShadow: "0 4px 20px rgba(194,140,108,0.25)",
+                }}>{"\u2705"} I Did This \u2014 Log It</button>
               </div>
             )}
 
-            {/* ═══════ INDOOR DONE ═══════ */}
+            {/* ═══════════ INDOOR DONE ═══════════ */}
             {screen === "indoor_done" && (
               <div style={{ padding: "56px 24px 24px", textAlign: "center" }}>
                 <div style={{ fontSize: 64, marginBottom: 16, marginTop: 40 }}>{"\u{1F389}"}</div>
                 <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, margin: "0 0 8px", color: "#f0f7ec" }}>Nice Work!</h2>
                 <div style={{ fontSize: 16, color: "#8a9a7e", marginBottom: 24 }}>Your streak lives on.</div>
-                <div style={{ background: "rgba(255,160,60,0.1)", border: "1px solid rgba(255,160,60,0.2)", borderRadius: 20, padding: 24, marginBottom: 24 }}><div style={{ fontSize: 42, fontWeight: 700, color: "#ffa03c", fontFamily: "'Playfair Display', serif" }}>{"\u{1F525}"} {streak} days</div><div style={{ fontSize: 14, color: "#c49a5c", marginTop: 4 }}>{getStreakMessage(streak)}</div></div>
-                <div style={{ background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)", borderRadius: 16, padding: 18, marginBottom: 24, textAlign: "left" }}><div style={{ fontSize: 11, fontWeight: 600, color: "#86c26c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>Weekly Total</div><div style={{ fontSize: 24, fontWeight: 700, color: "#e8efe4", fontFamily: "'Playfair Display', serif" }}>{weeklyMins} minutes</div>{currentMilestone && <div style={{ fontSize: 13, color: "#a8c89a", marginTop: 4 }}>{"\u2705"} {currentMilestone.label}</div>}</div>
-                <button onClick={() => { setScreen("home"); setConfirmed(false); }} style={primaryBtnStyle}>{"\u2190"} Back to Home</button>
+                <div style={{
+                  background: "rgba(255,160,60,0.1)", border: "1px solid rgba(255,160,60,0.2)",
+                  borderRadius: 20, padding: 24, marginBottom: 24,
+                }}>
+                  <div style={{ fontSize: 42, fontWeight: 700, color: "#ffa03c", fontFamily: "'Playfair Display', serif" }}>{"\u{1F525}"} {streak} days</div>
+                  <div style={{ fontSize: 14, color: "#c49a5c", marginTop: 4 }}>{STREAK_MESSAGES.find(s => streak >= s.min && streak <= s.max)?.msg}</div>
+                </div>
+                <div style={{
+                  background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)",
+                  borderRadius: 16, padding: 18, marginBottom: 24, textAlign: "left",
+                }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#86c26c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>Weekly Total</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: "#e8efe4", fontFamily: "'Playfair Display', serif" }}>{weeklyMins} minutes</div>
+                  {currentMilestone && <div style={{ fontSize: 13, color: "#a8c89a", marginTop: 4 }}>{"\u2705"} {currentMilestone.label}</div>}
+                </div>
+                <button onClick={() => { setScreen("home"); setConfirmed(false); }} style={{
+                  width: "100%", padding: "16px 0", borderRadius: 14, cursor: "pointer",
+                  background: "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)",
+                  border: "none", color: "#0a160a", fontSize: 15, fontWeight: 700, fontFamily: "inherit",
+                }}>{"\u2190"} Back to Home</button>
               </div>
             )}
 
-            {/* ═══════ CHECK-IN DONE ═══════ */}
+            {/* ═══════════ CHECK-IN DONE ═══════════ */}
             {screen === "checkin_done" && (
               <div style={{ padding: "56px 24px 24px", textAlign: "center" }}>
                 <div style={{ fontSize: 64, marginBottom: 16, marginTop: 40 }}>{"\u{1F6B6}\u200D\u2640\uFE0F"}</div>
                 <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, margin: "0 0 8px", color: "#f0f7ec" }}>Way to Go!</h2>
                 <div style={{ fontSize: 16, color: "#8a9a7e", marginBottom: 8 }}>Walk logged \u2014 {duration} minutes in the books.</div>
-                <div style={{ background: "rgba(255,160,60,0.1)", border: "1px solid rgba(255,160,60,0.2)", borderRadius: 20, padding: 24, marginBottom: 20, marginTop: 24 }}><div style={{ fontSize: 42, fontWeight: 700, color: "#ffa03c", fontFamily: "'Playfair Display', serif" }}>{"\u{1F525}"} {streak} days</div><div style={{ fontSize: 14, color: "#c49a5c", marginTop: 4 }}>{getStreakMessage(streak)}</div></div>
-                <div style={{ background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)", borderRadius: 16, padding: 18, marginBottom: 20, textAlign: "left" }}><div style={{ fontSize: 11, fontWeight: 600, color: "#86c26c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>Weekly Total</div><div style={{ fontSize: 24, fontWeight: 700, color: "#e8efe4", fontFamily: "'Playfair Display', serif" }}>{weeklyMins} minutes</div>{currentMilestone && <div style={{ fontSize: 13, color: "#a8c89a", marginTop: 4 }}>{"\u2705"} {currentMilestone.label}</div>}{nextMilestone && <div style={{ fontSize: 12, color: "#6b7a60", marginTop: 6 }}>Next milestone: {nextMilestone.mins} min \u2014 {nextMilestone.mins - weeklyMins} min to go</div>}</div>
-                <div style={{ background: "rgba(194,168,108,0.08)", border: "1px solid rgba(194,168,108,0.15)", borderRadius: 16, padding: 18, marginBottom: 24, textAlign: "left" }}><div style={{ fontSize: 11, fontWeight: 600, color: "#c2a86c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>{"\u{1F9EC}"} Did You Know?</div><div style={{ fontSize: 13.5, lineHeight: 1.55, color: "#d4c9a8" }}>A {duration}-minute walk burns roughly {Math.round(duration * 3.5)} calories, improves blood flow to your brain for up to 2 hours afterward, and lowers blood pressure for the rest of the day. Every walk adds up.</div></div>
-                <button onClick={() => { setScreen("home"); setConfirmed(false); }} style={primaryBtnStyle}>{"\u2190"} Back to Home</button>
+                <div style={{
+                  background: "rgba(255,160,60,0.1)", border: "1px solid rgba(255,160,60,0.2)",
+                  borderRadius: 20, padding: 24, marginBottom: 20, marginTop: 24,
+                }}>
+                  <div style={{ fontSize: 42, fontWeight: 700, color: "#ffa03c", fontFamily: "'Playfair Display', serif" }}>{"\u{1F525}"} {streak} days</div>
+                  <div style={{ fontSize: 14, color: "#c49a5c", marginTop: 4 }}>{STREAK_MESSAGES.find(s => streak >= s.min && streak <= s.max)?.msg}</div>
+                </div>
+                <div style={{
+                  background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)",
+                  borderRadius: 16, padding: 18, marginBottom: 20, textAlign: "left",
+                }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#86c26c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>Weekly Total</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: "#e8efe4", fontFamily: "'Playfair Display', serif" }}>{weeklyMins} minutes</div>
+                  {currentMilestone && <div style={{ fontSize: 13, color: "#a8c89a", marginTop: 4 }}>{"\u2705"} {currentMilestone.label}</div>}
+                  {nextMilestone && <div style={{ fontSize: 12, color: "#6b7a60", marginTop: 6 }}>Next: {nextMilestone.mins} min \u2014 {nextMilestone.mins - weeklyMins} min to go</div>}
+                </div>
+                <button onClick={() => { setScreen("home"); setConfirmed(false); }} style={{
+                  width: "100%", padding: "16px 0", borderRadius: 14, cursor: "pointer",
+                  background: "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)",
+                  border: "none", color: "#0a160a", fontSize: 15, fontWeight: 700, fontFamily: "inherit",
+                }}>{"\u2190"} Back to Home</button>
               </div>
             )}
 
-            {/* ═══════ WEEKLY PLAN ═══════ */}
+            {/* ═══════════ WEEKLY PLAN ═══════════ */}
             {screen === "week" && (
               <div style={{ padding: "56px 24px 24px" }}>
-                <div style={{ marginBottom: 24 }}><div style={{ fontSize: 13, letterSpacing: 2.5, textTransform: "uppercase", color: "#86c26c", fontWeight: 600, marginBottom: 4 }}>Plan Ahead</div><h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, margin: 0, color: "#f0f7ec" }}>Your Week</h2></div>
-                {weatherAlert.show && (<div style={{ background: "linear-gradient(135deg, rgba(255,180,60,0.12) 0%, rgba(255,120,20,0.06) 100%)", border: "1px solid rgba(255,180,60,0.25)", borderRadius: 16, padding: 18, marginBottom: 20 }}><div style={{ fontSize: 13, fontWeight: 600, color: "#ffb43c", marginBottom: 4 }}>{"\u26A0\uFE0F"} Weather Change Detected</div><div style={{ fontSize: 13, color: "#c4a060", lineHeight: 1.5 }}>{weatherAlert.message}. {weatherAlert.suggestion}</div></div>)}
-                {weatherLoading ? (<div style={{ textAlign: "center", padding: "40px 0", color: "#6b7a60" }}><div style={{ fontSize: 32, marginBottom: 8 }}>{"\u{1F4C5}"}</div><div style={{ fontSize: 14 }}>Loading weekly forecast...</div></div>) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    {weeklyWeather.map((w, idx) => { const isToday = idx === 0; const plan = weekPlan[w.day]; const logged = weekLog[w.day]; return (
-                      <div key={idx} style={{ ...cardStyle, background: isToday ? "rgba(134,194,108,0.08)" : cardStyle.background, border: isToday ? "1px solid rgba(134,194,108,0.25)" : cardStyle.border }}>
+                <div style={{ marginBottom: 24 }}>
+                  <div style={{ fontSize: 13, letterSpacing: 2.5, textTransform: "uppercase", color: "#86c26c", fontWeight: 600, marginBottom: 4 }}>Plan Ahead</div>
+                  <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, margin: 0, color: "#f0f7ec" }}>Your Week</h2>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {weeklyWeather.map((w, idx) => {
+                    const dayOffset = idx;
+                    const isToday = dayOffset === 0;
+                    const logged = weekLog[(todayIdx + idx) % 7];
+
+                    return (
+                      <div key={idx} style={{
+                        ...cardStyle,
+                        background: isToday ? "rgba(134,194,108,0.08)" : cardStyle.background,
+                        border: isToday ? "1px solid rgba(134,194,108,0.25)" : cardStyle.border,
+                      }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                            <div style={{ textAlign: "center", minWidth: 44 }}><div style={{ fontSize: 24 }}>{w.icon}</div><div style={{ fontSize: 11, color: "#6b7a60", marginTop: 2 }}>{w.high}\u00B0/{w.low}\u00B0</div></div>
-                            <div><div style={{ fontSize: 15, fontWeight: 600, color: "#e8efe4" }}>{isToday ? "Today" : FULL_DAYS[w.day]}</div><div style={{ fontSize: 12, color: "#8a9a7e" }}>{w.condition} {plan && plan.time ? `\u00B7 Walk at ${plan.time}` : ""}</div></div>
+                            <div style={{ textAlign: "center", minWidth: 44 }}>
+                              <div style={{ fontSize: 24 }}>{w.icon}</div>
+                              <div style={{ fontSize: 11, color: "#6b7a60", marginTop: 2 }}>{w.high}{"\u00B0"}/{w.low}{"\u00B0"}</div>
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 15, fontWeight: 600, color: "#e8efe4" }}>
+                                {isToday ? "Today" : FULL_DAYS[(todayIdx + idx) % 7]}
+                              </div>
+                              <div style={{ fontSize: 12, color: "#8a9a7e" }}>{w.condition}</div>
+                            </div>
                           </div>
-                          <div>{logged ? (<div style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, background: "rgba(134,194,108,0.2)", color: "#86c26c" }}>{"\u2713"} Done</div>) : plan?.type === "walk" ? (<div style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, background: "rgba(134,194,108,0.1)", color: "#86c26c" }}>{"\u{1F6B6}"} Walk</div>) : (<div style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, background: "rgba(194,140,108,0.1)", color: "#c2946c" }}>{"\u{1F3E0}"} Indoor</div>)}</div>
+                          <div>
+                            {logged ? (
+                              <div style={{
+                                fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8,
+                                background: "rgba(134,194,108,0.2)", color: "#86c26c",
+                              }}>{"\u2713"} Done</div>
+                            ) : w.good ? (
+                              <div style={{
+                                fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8,
+                                background: "rgba(134,194,108,0.1)", color: "#86c26c",
+                              }}>{"\u{1F6B6}"} Walk</div>
+                            ) : (
+                              <div style={{
+                                fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8,
+                                background: "rgba(194,140,108,0.1)", color: "#c2946c",
+                              }}>{"\u{1F3E0}"} Indoor</div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    ); })}
-                  </div>
-                )}
-                <div style={{ marginTop: 20, background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)", borderRadius: 16, padding: 18, textAlign: "center" }}>
+                    );
+                  })}
+                </div>
+
+                <div style={{
+                  marginTop: 20, background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)",
+                  borderRadius: 16, padding: 18, textAlign: "center",
+                }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: "#86c26c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>Week at a Glance</div>
-                  <div style={{ fontSize: 14, color: "#a8c89a", lineHeight: 1.5 }}>{weeklyWeather.filter(w => w.good).length} outdoor days \u00B7 {weeklyWeather.filter(w => !w.good).length} indoor days planned</div>
-                  <div style={{ fontSize: 13, color: "#6b7a60", marginTop: 4 }}>If you complete every day, you'll hit {weeklyWeather.length * duration} minutes this week</div>
+                  <div style={{ fontSize: 14, color: "#a8c89a", lineHeight: 1.5 }}>
+                    {weeklyWeather.filter(w => w.good).length} outdoor days {"\u00B7"} {weeklyWeather.filter(w => !w.good).length} indoor days planned
+                  </div>
+                  <div style={{ fontSize: 13, color: "#6b7a60", marginTop: 4 }}>
+                    Complete every day for {weeklyWeather.length * duration} minutes this week
+                  </div>
                 </div>
               </div>
             )}
-
-            {/* ═══════ TERMS ═══════ */}
-            {screen === "terms" && (
-              <div style={{ padding: "56px 24px 24px" }}>
-                <button onClick={() => setScreen(user ? "home" : "auth")} style={{ background: "none", border: "none", color: "#86c26c", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 0, marginBottom: 24 }}>{"\u2190"} Back</button>
-                <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, margin: "0 0 24px", color: "#f0f7ec" }}>Terms of Service</h2>
-                <div style={{ fontSize: 13, color: "#8a9a7e", lineHeight: 1.8 }}>
-                  <p style={{ color: "#6b7a60", fontSize: 12, marginBottom: 20 }}>Last updated: February 14, 2026</p>
-                  <div style={{ marginBottom: 20 }}><div style={{ fontSize: 15, fontWeight: 700, color: "#e8efe4", marginBottom: 8 }}>1. Acceptance of Terms</div><p>By accessing or using StepOut Daily ("the Service"), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the Service.</p></div>
-                  <div style={{ marginBottom: 20 }}><div style={{ fontSize: 15, fontWeight: 700, color: "#e8efe4", marginBottom: 8 }}>2. Description of Service</div><p>StepOut Daily is a wellness application that helps users incorporate daily walking and physical activity into their routines. The Service provides weather-based walk scheduling, indoor activity suggestions, streak tracking, and health-related educational content.</p></div>
-                  <div style={{ marginBottom: 20 }}><div style={{ fontSize: 15, fontWeight: 700, color: "#e8efe4", marginBottom: 8 }}>3. Health & Wellness Disclaimer</div><p style={{ color: "#c2a86c" }}>StepOut Daily is not a medical service and does not provide medical advice. The health information, longevity insights, and activity suggestions provided are for general educational and informational purposes only. Always consult with a qualified healthcare provider before beginning any new exercise program. You use StepOut Daily at your own risk.</p></div>
-                  <div style={{ marginBottom: 20 }}><div style={{ fontSize: 15, fontWeight: 700, color: "#e8efe4", marginBottom: 8 }}>4. User Accounts</div><p>To access certain features, you may create an account using Google Sign-In or email. You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account.</p></div>
-                  <div style={{ marginBottom: 20 }}><div style={{ fontSize: 15, fontWeight: 700, color: "#e8efe4", marginBottom: 8 }}>5. Privacy & Data Collection</div><p>We collect: your email and name (account identification), activity logs and streak data (progress tracking), walk duration preferences, and approximate location (weather only, via NOAA). We do not sell your personal information. Location data is not stored on our servers.</p></div>
-                  <div style={{ marginBottom: 20 }}><div style={{ fontSize: 15, fontWeight: 700, color: "#e8efe4", marginBottom: 8 }}>6. Weather Data</div><p>Weather data is provided by NOAA and may not always be current or correct. Always use your own judgment about outdoor conditions.</p></div>
-                  <div style={{ marginBottom: 20 }}><div style={{ fontSize: 15, fontWeight: 700, color: "#e8efe4", marginBottom: 8 }}>7. Free Service</div><p>StepOut Daily is currently free. We may introduce paid features in the future with advance notice.</p></div>
-                  <div style={{ marginBottom: 20 }}><div style={{ fontSize: 15, fontWeight: 700, color: "#e8efe4", marginBottom: 8 }}>8. Intellectual Property</div><p>All content, design, and functionality are property of StepOut Daily and protected by intellectual property laws.</p></div>
-                  <div style={{ marginBottom: 20 }}><div style={{ fontSize: 15, fontWeight: 700, color: "#e8efe4", marginBottom: 8 }}>9. Limitation of Liability</div><p>StepOut Daily is provided "as is" without warranties. We are not liable for indirect, incidental, or consequential damages.</p></div>
-                  <div style={{ marginBottom: 20 }}><div style={{ fontSize: 15, fontWeight: 700, color: "#e8efe4", marginBottom: 8 }}>10. Account Termination</div><p>You may delete your account at any time. Personal data will be removed within 30 days.</p></div>
-                  <div style={{ marginBottom: 20 }}><div style={{ fontSize: 15, fontWeight: 700, color: "#e8efe4", marginBottom: 8 }}>11. Contact</div><p>Questions? Email contact@stepoutdaily.com</p></div>
-                </div>
-              </div>
-            )}
-
           </div>
 
-          {/* ═══════ BOTTOM NAV ═══════ */}
-          {screen !== "auth" && screen !== "terms" && (
-            <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 430, padding: "12px 24px 28px", background: "linear-gradient(to top, #0a160a 60%, transparent)", display: "flex", justifyContent: "space-around" }}>
-              {[{ icon: "\u{1F3E0}", label: "Today", s: "home" }, { icon: "\u{1F4C5}", label: "Week", s: "week" }, { icon: "\u{1F3C3}", label: "Indoor", s: "indoor" }].map((item, i) => (
-                <button key={i} onClick={() => { if (item.s === "indoor") setIndoorActivity(getRandomActivity()); setScreen(item.s); setConfirmed(false); }} style={{ background: "none", border: "none", cursor: "pointer", textAlign: "center", padding: "6px 16px" }}>
-                  <div style={{ fontSize: 22, marginBottom: 2 }}>{item.icon}</div>
-                  <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.5, color: (screen === item.s || (item.s === "home" && ["detail", "indoor_done", "checkin_done"].includes(screen))) ? "#86c26c" : "#4a5a40" }}>{item.label}</div>
-                </button>
-              ))}
-            </div>
-          )}
+          {/* ═══════════ BOTTOM NAV ═══════════ */}
+          <div style={{
+            position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)",
+            width: "100%", maxWidth: 390, padding: "12px 24px 28px",
+            background: "linear-gradient(to top, #0a160a 60%, transparent)",
+            display: "flex", justifyContent: "space-around", zIndex: 50,
+          }}>
+            {[
+              { icon: "\u{1F3E0}", label: "Today", s: "home" },
+              { icon: "\u{1F4C5}", label: "Week", s: "week" },
+              { icon: "\u{1F3C3}", label: "Indoor", s: "indoor" },
+            ].map((item, i) => (
+              <button key={i} onClick={() => {
+                if (item.s === "indoor") setIndoorActivity(getRandomActivity());
+                setScreen(item.s);
+                setConfirmed(false);
+                setShowProfile(false);
+              }} style={{
+                background: "none", border: "none", cursor: "pointer", textAlign: "center", padding: "6px 16px",
+              }}>
+                <div style={{ fontSize: 22, marginBottom: 2 }}>{item.icon}</div>
+                <div style={{
+                  fontSize: 10, fontWeight: 600, letterSpacing: 0.5,
+                  color: (screen === item.s || (item.s === "home" && (screen === "detail" || screen === "indoor_done" || screen === "checkin_done"))) ? "#86c26c" : "#4a5a40",
+                }}>{item.label}</div>
+              </button>
+            ))}
+          </div>
+
+          {/* Install prompt */}
+          {showInstall && <InstallPrompt onDismiss={() => { setShowInstall(false); localStorage.setItem("stepout_install_dismissed", "true"); }} />}
         </div>
       );
     }
 
-    ReactDOM.createRoot(document.getElementById("root")).render(<StepOutApp />);
+    /* ═══════════════════════════════════════════
+       ROOT APP (handles auth state)
+    ═══════════════════════════════════════════ */
+    function App() {
+      const [user, setUser] = useState(null);
+      const [loading, setLoading] = useState(true);
+
+      useEffect(() => {
+        // Check for existing session
+        if (firebaseReady && auth) {
+          auth.onAuthStateChanged((firebaseUser) => {
+            if (firebaseUser) {
+              setUser({
+                uid: firebaseUser.uid,
+                email: firebaseUser.email,
+                name: firebaseUser.displayName || firebaseUser.email,
+                provider: firebaseUser.providerData[0]?.providerId === "google.com" ? "google" : "email"
+              });
+            }
+            setLoading(false);
+          });
+        } else {
+          // Check localStorage for offline user
+          const saved = localStorage.getItem("stepout_user");
+          if (saved) {
+            try { setUser(JSON.parse(saved)); } catch(e) {}
+          }
+          setLoading(false);
+        }
+      }, []);
+
+      function handleLogin(userData) {
+        setUser(userData);
+        localStorage.setItem("stepout_user", JSON.stringify(userData));
+      }
+
+      function handleLogout() {
+        if (firebaseReady && auth) {
+          auth.signOut().catch(e => console.log("Sign out error:", e.message));
+        }
+        localStorage.removeItem("stepout_user");
+        setUser(null);
+      }
+
+      if (loading) {
+        return (
+          <div style={{
+            maxWidth: 390, margin: "0 auto", minHeight: "100vh",
+            background: "linear-gradient(170deg, #1a2e1a 0%, #0f1f0f 40%, #0a160a 100%)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontFamily: "'Instrument Sans', system-ui, sans-serif",
+          }}>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 48, marginBottom: 16 }}>{"\u{1F6B6}\u200D\u2640\uFE0F"}</div>
+              <div style={{ color: "#86c26c", fontSize: 16, fontWeight: 600 }}>Loading...</div>
+            </div>
+          </div>
+        );
+      }
+
+      if (!user) {
+        return <WelcomeScreen onLogin={handleLogin} />;
+      }
+
+      return <StepOutApp user={user} onLogout={handleLogout} />;
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
   </script>
 </body>
 </html>
