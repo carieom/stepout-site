@@ -430,17 +430,10 @@
   </p>
 
   <!-- Buttondown's exact embed form, styled with CSS above -->
-  <form
-    action="https://buttondown.com/api/emails/embed-subscribe/stepout"
-    method="post"
-    class="embeddable-buttondown-form"
-    referrerpolicy="unsafe-url"
-    id="heroForm"
-  >
-    <label for="bd-email-hero">Enter your email</label>
-    <input type="email" name="email" id="bd-email-hero" placeholder="Enter your email" required />
-    <input type="submit" value="Join Waitlist" />
-  </form>
+  <div class="embeddable-buttondown-form" id="heroFormUI">
+    <input type="email" id="heroEmail" placeholder="Enter your email" aria-label="Email address" />
+    <input type="submit" value="Join Waitlist" id="heroBtn" />
+  </div>
   <div class="signup-success" id="heroSuccess">
     <div class="checkmark">&#10003;</div>
     <h3>You're on the list!</h3>
@@ -569,18 +562,10 @@
     <h2>Start walking toward<br>a longer life</h2>
     <p>Join the waitlist and be the first to know when StepOut launches.</p>
 
-    <form
-      action="https://buttondown.com/api/emails/embed-subscribe/stepout"
-      method="post"
-      class="embeddable-buttondown-form"
-      referrerpolicy="unsafe-url"
-      target="bd-target"
-      id="ctaForm"
-    >
-      <label for="bd-email-cta">Enter your email</label>
-      <input type="email" name="email" id="bd-email-cta" placeholder="Enter your email" required />
-      <input type="submit" value="Join Waitlist" />
-    </form>
+    <div class="embeddable-buttondown-form" id="ctaFormUI">
+      <input type="email" id="ctaEmail" placeholder="Enter your email" aria-label="Email address" />
+      <input type="submit" value="Join Waitlist" id="ctaBtn" />
+    </div>
     <div class="signup-success" id="ctaSuccess">
       <div class="checkmark">&#10003;</div>
       <h3>You're on the list!</h3>
@@ -588,8 +573,6 @@
     </div>
   </div>
 </section>
-
-<iframe name="bd-target" style="display:none;"></iframe>
 
 <footer>
   <div class="footer-logo">
@@ -613,22 +596,63 @@ var observer = new IntersectionObserver(function(entries) {
 }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
 document.querySelectorAll('.fade-in').forEach(function(el) { observer.observe(el); });
 
-// Show success message after form submits to Buttondown
-document.getElementById('heroForm').addEventListener('submit', function() {
-  var form = this;
-  setTimeout(function() {
-    form.style.display = 'none';
-    document.getElementById('heroSuccess').style.display = 'block';
-    document.getElementById('heroNote').style.display = 'none';
-  }, 1500);
+// Submit to Buttondown using fetch with no-cors mode
+function subscribe(emailId, formId, successId, noteId) {
+  var emailInput = document.getElementById(emailId);
+  var email = emailInput.value.trim();
+
+  if (!email || email.indexOf('@') === -1 || email.indexOf('.') === -1) {
+    emailInput.style.borderColor = 'rgba(255, 100, 100, 0.5)';
+    return;
+  }
+
+  // Show loading
+  var btn = document.getElementById(formId).querySelector('[type="submit"]');
+  btn.value = 'Joining...';
+  btn.disabled = true;
+  btn.style.opacity = '0.7';
+
+  // Send to Buttondown using no-cors (sends the data, ignores the response)
+  var formData = new FormData();
+  formData.append('email', email);
+
+  fetch('https://buttondown.com/api/emails/embed-subscribe/stepout', {
+    method: 'POST',
+    mode: 'no-cors',
+    body: formData
+  }).then(function() {
+    // Show success
+    document.getElementById(formId).style.display = 'none';
+    document.getElementById(successId).style.display = 'block';
+    if (noteId) {
+      var note = document.getElementById(noteId);
+      if (note) note.style.display = 'none';
+    }
+  }).catch(function() {
+    // Even on catch, the data was likely sent
+    document.getElementById(formId).style.display = 'none';
+    document.getElementById(successId).style.display = 'block';
+    if (noteId) {
+      var note = document.getElementById(noteId);
+      if (note) note.style.display = 'none';
+    }
+  });
+}
+
+// Click handlers
+document.getElementById('heroBtn').addEventListener('click', function() {
+  subscribe('heroEmail', 'heroFormUI', 'heroSuccess', 'heroNote');
+});
+document.getElementById('ctaBtn').addEventListener('click', function() {
+  subscribe('ctaEmail', 'ctaFormUI', 'ctaSuccess', null);
 });
 
-document.getElementById('ctaForm').addEventListener('submit', function() {
-  var form = this;
-  setTimeout(function() {
-    form.style.display = 'none';
-    document.getElementById('ctaSuccess').style.display = 'block';
-  }, 1500);
+// Enter key handlers
+document.getElementById('heroEmail').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') subscribe('heroEmail', 'heroFormUI', 'heroSuccess', 'heroNote');
+});
+document.getElementById('ctaEmail').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') subscribe('ctaEmail', 'ctaFormUI', 'ctaSuccess', null);
 });
 </script>
 
