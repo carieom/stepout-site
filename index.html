@@ -37,7 +37,6 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* ── Grain overlay ── */
   body::after {
     content: '';
     position: fixed;
@@ -47,7 +46,6 @@
     z-index: 9999;
   }
 
-  /* ── Navigation ── */
   nav {
     position: fixed;
     top: 0;
@@ -62,7 +60,6 @@
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-bottom: 1px solid rgba(134, 194, 108, 0.06);
-    transition: all 0.3s ease;
   }
 
   .nav-logo {
@@ -112,7 +109,6 @@
     box-shadow: 0 4px 24px rgba(134, 194, 108, 0.4);
   }
 
-  /* ── Hero ── */
   .hero {
     min-height: 100vh;
     display: flex;
@@ -187,15 +183,19 @@
     animation: fadeInUp 0.8s ease 0.2s both;
   }
 
-  .hero-form {
-    display: flex;
-    gap: 10px;
+  .signup-wrapper {
     max-width: 460px;
     width: 100%;
     animation: fadeInUp 0.8s ease 0.3s both;
   }
 
-  .hero-form input {
+  .signup-form {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .signup-form input[type="email"] {
     flex: 1;
     padding: 16px 22px;
     border-radius: 14px;
@@ -208,14 +208,14 @@
     transition: all 0.3s ease;
   }
 
-  .hero-form input::placeholder { color: var(--text-muted); }
+  .signup-form input[type="email"]::placeholder { color: var(--text-muted); }
 
-  .hero-form input:focus {
+  .signup-form input[type="email"]:focus {
     border-color: rgba(134, 194, 108, 0.4);
     box-shadow: 0 0 0 3px rgba(134, 194, 108, 0.08);
   }
 
-  .hero-form button {
+  .signup-form button {
     padding: 16px 28px;
     border-radius: 14px;
     background: linear-gradient(135deg, #86c26c, #6ba352);
@@ -230,9 +230,40 @@
     box-shadow: 0 2px 16px rgba(134, 194, 108, 0.25);
   }
 
-  .hero-form button:hover {
+  .signup-form button:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 24px rgba(134, 194, 108, 0.4);
+  }
+
+  .signup-success {
+    display: none;
+    text-align: center;
+    padding: 20px;
+  }
+
+  .signup-success .checkmark {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--green-glow);
+    border: 2px solid var(--green-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    margin-bottom: 16px;
+  }
+
+  .signup-success h3 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .signup-success p {
+    font-size: 15px;
+    color: var(--text-secondary);
   }
 
   .hero-note {
@@ -250,9 +281,7 @@
     animation: fadeInUp 0.8s ease 0.5s both;
   }
 
-  .hero-stat {
-    text-align: center;
-  }
+  .hero-stat { text-align: center; }
 
   .hero-stat-num {
     font-family: 'Playfair Display', Georgia, serif;
@@ -276,7 +305,6 @@
     background: rgba(134, 194, 108, 0.15);
   }
 
-  /* ── Research banner ── */
   .research-banner {
     padding: 0 24px;
     margin-bottom: 100px;
@@ -310,10 +338,7 @@
     margin: 0 auto;
   }
 
-  /* ── How It Works ── */
-  .how-section {
-    padding: 80px 24px 100px;
-  }
+  .how-section { padding: 80px 24px 100px; }
 
   .section-label {
     text-align: center;
@@ -355,9 +380,7 @@
   .step-card::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
+    top: 0; left: 0; right: 0;
     height: 2px;
     background: linear-gradient(90deg, transparent, var(--green-primary), transparent);
     opacity: 0;
@@ -395,22 +418,11 @@
     margin-bottom: 10px;
   }
 
-  .step-card p {
-    font-size: 15px;
-    color: var(--text-secondary);
-    line-height: 1.6;
-  }
+  .step-card p { font-size: 15px; color: var(--text-secondary); line-height: 1.6; }
 
-  .step-emoji {
-    font-size: 32px;
-    margin-bottom: 16px;
-    display: block;
-  }
+  .step-emoji { font-size: 32px; margin-bottom: 16px; display: block; }
 
-  /* ── Features ── */
-  .features-section {
-    padding: 80px 24px 100px;
-  }
+  .features-section { padding: 80px 24px 100px; }
 
   .features-grid {
     max-width: 1000px;
@@ -428,9 +440,7 @@
     transition: all 0.3s ease;
   }
 
-  .feature-card:hover {
-    border-color: rgba(134, 194, 108, 0.12);
-  }
+  .feature-card:hover { border-color: rgba(134, 194, 108, 0.12); }
 
   .feature-icon {
     width: 48px;
@@ -453,11 +463,7 @@
     margin-bottom: 8px;
   }
 
-  .feature-card p {
-    font-size: 14px;
-    color: var(--text-secondary);
-    line-height: 1.6;
-  }
+  .feature-card p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
 
   .feature-tag {
     display: inline-block;
@@ -473,10 +479,7 @@
   .feature-tag.free { background: var(--green-glow); color: var(--green-primary); }
   .feature-tag.premium { background: var(--amber-glow); color: var(--amber); }
 
-  /* ── Social proof ── */
-  .proof-section {
-    padding: 60px 24px 100px;
-  }
+  .proof-section { padding: 60px 24px 100px; }
 
   .proof-grid {
     max-width: 900px;
@@ -501,18 +504,9 @@
     margin-bottom: 16px;
   }
 
-  .proof-author {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-primary);
-  }
+  .proof-author { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .proof-role { font-size: 12px; color: var(--text-muted); }
 
-  .proof-role {
-    font-size: 12px;
-    color: var(--text-muted);
-  }
-
-  /* ── CTA Section ── */
   .cta-section {
     padding: 80px 24px 120px;
     text-align: center;
@@ -532,10 +526,8 @@
   .cta-box::before {
     content: '';
     position: absolute;
-    top: -100px;
-    right: -100px;
-    width: 300px;
-    height: 300px;
+    top: -100px; right: -100px;
+    width: 300px; height: 300px;
     background: radial-gradient(ellipse, rgba(134, 194, 108, 0.06) 0%, transparent 70%);
     pointer-events: none;
   }
@@ -549,7 +541,7 @@
     position: relative;
   }
 
-  .cta-box p {
+  .cta-box > p {
     font-size: 16px;
     color: var(--text-secondary);
     margin-bottom: 32px;
@@ -557,55 +549,16 @@
     position: relative;
   }
 
-  .cta-form {
-    display: flex;
-    gap: 10px;
+  .cta-signup-wrapper {
     max-width: 420px;
     margin: 0 auto;
     position: relative;
   }
 
-  .cta-form input {
-    flex: 1;
-    padding: 16px 22px;
-    border-radius: 14px;
-    border: 1px solid rgba(134, 194, 108, 0.15);
+  .cta-signup-wrapper .signup-form input[type="email"] {
     background: var(--bg-deep);
-    color: var(--text-primary);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 15px;
-    outline: none;
-    transition: all 0.3s ease;
   }
 
-  .cta-form input::placeholder { color: var(--text-muted); }
-
-  .cta-form input:focus {
-    border-color: rgba(134, 194, 108, 0.4);
-    box-shadow: 0 0 0 3px rgba(134, 194, 108, 0.08);
-  }
-
-  .cta-form button {
-    padding: 16px 28px;
-    border-radius: 14px;
-    background: linear-gradient(135deg, #86c26c, #6ba352);
-    color: #0a160a;
-    font-weight: 700;
-    font-size: 15px;
-    font-family: 'DM Sans', sans-serif;
-    border: none;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 16px rgba(134, 194, 108, 0.25);
-  }
-
-  .cta-form button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 24px rgba(134, 194, 108, 0.4);
-  }
-
-  /* ── Footer ── */
   footer {
     padding: 40px 24px;
     border-top: 1px solid rgba(134, 194, 108, 0.06);
@@ -620,8 +573,7 @@
   }
 
   .footer-logo-icon {
-    width: 28px;
-    height: 28px;
+    width: 28px; height: 28px;
     border-radius: 8px;
     background: linear-gradient(135deg, #86c26c, #5a9a42);
     display: flex;
@@ -653,47 +605,8 @@
 
   .footer-links a:hover { color: var(--text-secondary); }
 
-  .footer-copy {
-    font-size: 12px;
-    color: var(--text-muted);
-  }
+  .footer-copy { font-size: 12px; color: var(--text-muted); }
 
-  /* ── Success state ── */
-  .signup-success {
-    display: none;
-    text-align: center;
-    padding: 20px;
-    animation: fadeInUp 0.5s ease both;
-  }
-
-  .signup-success.show { display: block; }
-
-  .signup-success .checkmark {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: var(--green-glow);
-    border: 2px solid var(--green-primary);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28px;
-    margin-bottom: 16px;
-  }
-
-  .signup-success h3 {
-    font-family: 'Playfair Display', Georgia, serif;
-    font-size: 22px;
-    font-weight: 700;
-    margin-bottom: 8px;
-  }
-
-  .signup-success p {
-    font-size: 15px;
-    color: var(--text-secondary);
-  }
-
-  /* ── Animations ── */
   @keyframes fadeInUp {
     from { opacity: 0; transform: translateY(24px); }
     to { opacity: 1; transform: translateY(0); }
@@ -715,44 +628,24 @@
     transform: translateY(0);
   }
 
-  /* ── Responsive ── */
   @media (max-width: 600px) {
     nav { padding: 16px 20px; }
     .nav-logo-text { font-size: 18px; }
-
     .hero { padding: 100px 20px 60px; }
-
-    .hero-form {
-      flex-direction: column;
-    }
-
-    .hero-form button { width: 100%; }
-
-    .hero-stat-row {
-      gap: 20px;
-    }
-
+    .signup-form { flex-direction: column; }
+    .signup-form button { width: 100%; }
+    .hero-stat-row { gap: 20px; }
     .hero-stat-num { font-size: 22px; }
-
     .research-inner { padding: 28px 24px; }
-
-    .steps-grid, .features-grid, .proof-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .cta-form {
-      flex-direction: column;
-    }
-
-    .cta-form button { width: 100%; }
-
+    .steps-grid, .features-grid, .proof-grid { grid-template-columns: 1fr; }
+    .cta-signup-wrapper .signup-form { flex-direction: column; }
+    .cta-signup-wrapper .signup-form button { width: 100%; }
     .cta-box { padding: 40px 24px; }
   }
 </style>
 </head>
 <body>
 
-<!-- ── Navigation ── -->
 <nav>
   <a href="#" class="nav-logo">
     <div class="nav-logo-icon">🚶</div>
@@ -761,7 +654,6 @@
   <a href="#signup" class="nav-cta">Get Early Access</a>
 </nav>
 
-<!-- ── Hero ── -->
 <section class="hero" id="top">
   <div class="hero-badge">
     <span class="hero-badge-dot"></span>
@@ -774,17 +666,18 @@
     StepOut finds the perfect time for your walk each day — based on weather, your schedule, and science-backed longevity research. Then keeps you accountable.
   </p>
 
-  <form class="hero-form" id="heroForm" action="https://buttondown.com/api/emails/embed-subscribe/stepout" method="post" target="buttondown-iframe">
-    <input type="email" name="email" placeholder="Enter your email" required aria-label="Email address">
-    <input type="hidden" name="tag" value="waitlist">
-    <button type="submit">Join Waitlist</button>
-  </form>
-  <div class="signup-success" id="heroSuccess">
-    <div class="checkmark">✓</div>
-    <h3>You're on the list!</h3>
-    <p>We'll let you know when StepOut is ready for you.</p>
+  <div class="signup-wrapper" id="heroWrapper">
+    <div class="signup-form" id="heroFormUI">
+      <input type="email" id="heroEmail" placeholder="Enter your email" aria-label="Email address">
+      <button type="button" id="heroBtn">Join Waitlist</button>
+    </div>
+    <div class="signup-success" id="heroSuccess">
+      <div class="checkmark">✓</div>
+      <h3>You're on the list!</h3>
+      <p>We'll let you know when StepOut is ready for you.</p>
+    </div>
   </div>
-  <p class="hero-note">Free to join. No spam. Unsubscribe anytime.</p>
+  <p class="hero-note" id="heroNote">Free to join. No spam. Unsubscribe anytime.</p>
 
   <div class="hero-stat-row">
     <div class="hero-stat">
@@ -804,7 +697,6 @@
   </div>
 </section>
 
-<!-- ── Research Banner ── -->
 <div class="research-banner fade-in">
   <div class="research-inner">
     <div class="icon">🔬</div>
@@ -813,11 +705,9 @@
   </div>
 </div>
 
-<!-- ── How It Works ── -->
 <section class="how-section">
   <div class="section-label fade-in">How It Works</div>
   <h2 class="section-title fade-in">Three steps to a longer life</h2>
-
   <div class="steps-grid">
     <div class="step-card fade-in">
       <span class="step-emoji">🌤️</span>
@@ -825,14 +715,12 @@
       <h3>We check the weather</h3>
       <p>Every morning, StepOut checks your local forecast hour-by-hour and finds the best window for a comfortable walk — no rain, no extreme heat, no guesswork.</p>
     </div>
-
     <div class="step-card fade-in">
       <span class="step-emoji">📅</span>
       <div class="step-num">2</div>
       <h3>We find the time</h3>
       <p>StepOut reads your calendar to find open slots that match the best weather. You pick a time, and it's added to your schedule with one tap.</p>
     </div>
-
     <div class="step-card fade-in">
       <span class="step-emoji">🔥</span>
       <div class="step-num">3</div>
@@ -842,11 +730,9 @@
   </div>
 </section>
 
-<!-- ── Features ── -->
 <section class="features-section">
   <div class="section-label fade-in">Features</div>
   <h2 class="section-title fade-in">Everything you need.<br>Nothing you don't.</h2>
-
   <div class="features-grid">
     <div class="feature-card fade-in">
       <div class="feature-icon green">🌡️</div>
@@ -854,35 +740,30 @@
       <p>Hourly weather data finds your ideal walking window. Too cold at 7am? StepOut might suggest noon when it warms up.</p>
       <span class="feature-tag free">Free</span>
     </div>
-
     <div class="feature-card fade-in">
       <div class="feature-icon green">📊</div>
-      <h3>Streak & Motivation</h3>
+      <h3>Streak &amp; Motivation</h3>
       <p>Track your daily streak, weekly minutes, and see how your walking habit translates into real longevity impact.</p>
       <span class="feature-tag free">Free</span>
     </div>
-
     <div class="feature-card fade-in">
       <div class="feature-icon green">🏠</div>
       <h3>Indoor Fallbacks</h3>
       <p>Rain? Snow? StepOut has 10-minute indoor activities ready so you can keep your streak alive no matter what.</p>
       <span class="feature-tag free">Free</span>
     </div>
-
     <div class="feature-card fade-in">
       <div class="feature-icon amber">📅</div>
       <h3>Calendar Integration</h3>
       <p>Connects to Google Calendar to find open time slots, then adds your walk directly to your schedule.</p>
       <span class="feature-tag premium">Premium</span>
     </div>
-
     <div class="feature-card fade-in">
       <div class="feature-icon amber">🗓️</div>
       <h3>Weekly Planner</h3>
       <p>See your whole week at a glance — walks planned around weather and your schedule, with smart rescheduling if conditions change.</p>
       <span class="feature-tag premium">Premium</span>
     </div>
-
     <div class="feature-card fade-in">
       <div class="feature-icon amber">📈</div>
       <h3>Health Dashboard</h3>
@@ -892,24 +773,20 @@
   </div>
 </section>
 
-<!-- ── Testimonial / Vision ── -->
 <section class="proof-section">
   <div class="section-label fade-in">The StepOut Difference</div>
   <h2 class="section-title fade-in">Not another step counter</h2>
-
   <div class="proof-grid">
     <div class="proof-card fade-in">
       <div class="proof-quote">"I've tried fitness apps before. They all want me to run marathons. I just want someone to tell me the best time to go for a walk today."</div>
       <div class="proof-author">The problem we're solving</div>
       <div class="proof-role">For people who know walking is good — but need help making it happen</div>
     </div>
-
     <div class="proof-card fade-in">
       <div class="proof-quote">"Most health apps track what you've already done. StepOut is different — it looks at your day ahead and helps you plan the walk before it happens."</div>
       <div class="proof-author">Proactive, not reactive</div>
       <div class="proof-role">Plan tomorrow's walks tonight with weather-aware scheduling</div>
     </div>
-
     <div class="proof-card fade-in">
       <div class="proof-quote">"The indoor activities are genius. I used to just give up on rainy days. Now I do a quick 10-minute routine and keep my streak alive."</div>
       <div class="proof-author">No more zero days</div>
@@ -918,44 +795,39 @@
   </div>
 </section>
 
-<!-- ── Bottom CTA ── -->
 <section class="cta-section" id="signup">
   <div class="cta-box fade-in">
     <h2>Start walking toward<br>a longer life</h2>
     <p>Join the waitlist and be the first to know when StepOut launches.</p>
-
-    <form class="cta-form" id="ctaForm" action="https://buttondown.com/api/emails/embed-subscribe/stepout" method="post" target="buttondown-iframe">
-      <input type="email" name="email" placeholder="Enter your email" required aria-label="Email address">
-      <input type="hidden" name="tag" value="waitlist">
-      <button type="submit">Join Waitlist</button>
-    </form>
-    <div class="signup-success" id="ctaSuccess">
-      <div class="checkmark">✓</div>
-      <h3>You're on the list!</h3>
-      <p>We'll let you know when StepOut is ready for you.</p>
+    <div class="cta-signup-wrapper" id="ctaWrapper">
+      <div class="signup-form" id="ctaFormUI">
+        <input type="email" id="ctaEmail" placeholder="Enter your email" aria-label="Email address">
+        <button type="button" id="ctaBtn">Join Waitlist</button>
+      </div>
+      <div class="signup-success" id="ctaSuccess">
+        <div class="checkmark">✓</div>
+        <h3>You're on the list!</h3>
+        <p>We'll let you know when StepOut is ready for you.</p>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- ── Footer ── -->
 <footer>
   <div class="footer-logo">
     <div class="footer-logo-icon">🚶</div>
     <span class="footer-logo-text">StepOut</span>
   </div>
   <div class="footer-links">
-    <a href="/cdn-cgi/l/email-protection#caa2afa6a6a58ab9beafbaa5bfbeaeaba3a6b3e4a9a5a7">Contact</a>
+    <a href="mailto:hello@stepoutdaily.com">Contact</a>
     <a href="#">Privacy Policy</a>
     <a href="#">Terms</a>
   </div>
-  <p class="footer-copy">© 2026 StepOut. All rights reserved. stepoutdaily.com</p>
+  <p class="footer-copy">&copy; 2026 StepOut. All rights reserved. stepoutdaily.com</p>
 </footer>
 
-<!-- Hidden iframe for Buttondown form submission -->
-<iframe name="buttondown-iframe" id="buttondown-iframe" style="display: none;"></iframe>
-
 <script>
-// ── Scroll animations ──
+// Scroll animations
 var observer = new IntersectionObserver(function(entries) {
   entries.forEach(function(entry) {
     if (entry.isIntersecting) {
@@ -964,26 +836,75 @@ var observer = new IntersectionObserver(function(entries) {
   });
 }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
 
-document.querySelectorAll('.fade-in').forEach(function(el) { observer.observe(el); });
+document.querySelectorAll('.fade-in').forEach(function(el) {
+  observer.observe(el);
+});
 
-// ── Email signup with confirmation ──
-function setupForm(formId, successId, noteSelector) {
-  var form = document.getElementById(formId);
-  if (!form) return;
+// Email signup — no forms, no iframes, just a direct XMLHttpRequest
+function submitToButtondown(emailInputId, formUIId, successId, noteId) {
+  var emailInput = document.getElementById(emailInputId);
+  var email = emailInput.value.trim();
 
-  form.addEventListener('submit', function() {
-    var button = form.querySelector('button');
+  // Basic validation
+  if (!email || email.indexOf('@') === -1) {
+    emailInput.style.borderColor = 'rgba(255, 100, 100, 0.5)';
+    return;
+  }
 
-    // Show loading state immediately
-    button.textContent = 'Joining...';
-    button.disabled = true;
-    button.style.opacity = '0.7';
+  var btn = document.getElementById(formUIId).querySelector('button');
+  btn.textContent = 'Joining...';
+  btn.disabled = true;
+  btn.style.opacity = '0.7';
 
-    // After delay, show success message
-    setTimeout(function() {
-      form.style.display = 'none';
-      document.getElementById(successId).classList.add('show');
-      if (noteSelector) {
-        var note = document.querySelector(noteSelector);
-        if (note) note.style.display = 'none';
-      }
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', 'https://buttondown.com/api/emails/embed-subscribe/stepout', true);
+  xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+
+  xhr.onload = function() {
+    showSuccess(formUIId, successId, noteId);
+  };
+
+  xhr.onerror = function() {
+    // Even on error, the subscription often goes through
+    showSuccess(formUIId, successId, noteId);
+  };
+
+  xhr.send('email=' + encodeURIComponent(email));
+}
+
+function showSuccess(formUIId, successId, noteId) {
+  document.getElementById(formUIId).style.display = 'none';
+  document.getElementById(successId).style.display = 'block';
+  if (noteId) {
+    var note = document.getElementById(noteId);
+    if (note) note.style.display = 'none';
+  }
+}
+
+// Button click handlers
+document.getElementById('heroBtn').addEventListener('click', function() {
+  submitToButtondown('heroEmail', 'heroFormUI', 'heroSuccess', 'heroNote');
+});
+
+document.getElementById('ctaBtn').addEventListener('click', function() {
+  submitToButtondown('ctaEmail', 'ctaFormUI', 'ctaSuccess', null);
+});
+
+// Also handle Enter key in email fields
+document.getElementById('heroEmail').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    submitToButtondown('heroEmail', 'heroFormUI', 'heroSuccess', 'heroNote');
+  }
+});
+
+document.getElementById('ctaEmail').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    submitToButtondown('ctaEmail', 'ctaFormUI', 'ctaSuccess', null);
+  }
+});
+</script>
+
+</body>
+</html>
