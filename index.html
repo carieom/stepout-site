@@ -14,7 +14,6 @@
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://stepoutdaily.com" />
 
-  <!-- Favicon & Icons -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
@@ -164,6 +163,17 @@
       );
     };
 
+    /* =========== SHARED STYLES =========== */
+    var pageWrap = { maxWidth: 390, margin: "0 auto", minHeight: "100vh", background: "linear-gradient(170deg, #1a2e1a 0%, #0f1f0f 40%, #0a160a 100%)", fontFamily: "'Instrument Sans', 'Avenir Next', system-ui, sans-serif", color: "#e8efe4" };
+    var fontLink = "https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap";
+    var inputStyle = { width: "100%", padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "#e8efe4", fontSize: 15, fontFamily: "inherit", outline: "none", marginBottom: 12 };
+    var primaryBtn = { width: "100%", padding: "16px 0", borderRadius: 14, border: "none", background: "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)", color: "#0a160a", fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 4px 24px rgba(134,194,108,0.3)", marginBottom: 12 };
+    var googleBtn = { width: "100%", padding: "16px 0", borderRadius: 14, cursor: "pointer", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", color: "#e8efe4", fontSize: 15, fontWeight: 600, fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 12 };
+    var backBtn = { background: "none", border: "none", color: "#86c26c", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 0, marginBottom: 32 };
+    var linkBtn = { background: "none", border: "none", color: "#86c26c", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: "8px 0" };
+    var errBox = function(msg) { return msg ? <div style={{ color: "#e07060", fontSize: 13, marginBottom: 12, padding: "10px 14px", background: "rgba(224,112,96,0.1)", borderRadius: 10 }}>{msg}</div> : null; };
+    var successBox = function(msg) { return msg ? <div style={{ color: "#86c26c", fontSize: 13, marginBottom: 12, padding: "10px 14px", background: "rgba(134,194,108,0.1)", borderRadius: 10 }}>{msg}</div> : null; };
+
     /* =========== WELCOME SCREEN =========== */
     function WelcomeScreen({ onLogin }) {
       const [mode, setMode] = useState("welcome");
@@ -171,25 +181,9 @@
       const [password, setPassword] = useState("");
       const [name, setName] = useState("");
       const [error, setError] = useState("");
+      const [success, setSuccess] = useState("");
       const [loading, setLoading] = useState(false);
-
-      var inputStyle = {
-        width: "100%", padding: "14px 16px", borderRadius: 12,
-        background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)",
-        color: "#e8efe4", fontSize: 15, fontFamily: "inherit", outline: "none", marginBottom: 12,
-      };
-      var primaryBtn = {
-        width: "100%", padding: "16px 0", borderRadius: 14, border: "none",
-        background: "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)",
-        color: "#0a160a", fontSize: 16, fontWeight: 700, cursor: "pointer",
-        fontFamily: "inherit", boxShadow: "0 4px 24px rgba(134,194,108,0.3)", marginBottom: 12,
-      };
-      var googleBtn = {
-        width: "100%", padding: "16px 0", borderRadius: 14, cursor: "pointer",
-        background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)",
-        color: "#e8efe4", fontSize: 15, fontWeight: 600, fontFamily: "inherit",
-        display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 12,
-      };
+      const [resetEmail, setResetEmail] = useState("");
 
       async function handleGoogleSignIn() {
         setError(""); setLoading(true);
@@ -199,7 +193,7 @@
             var result = await auth.signInWithPopup(provider);
             onLogin({ uid: result.user.uid, email: result.user.email, name: result.user.displayName, provider: "google" });
           } catch(e) {
-            setError(e.code === "auth/unauthorized-domain" ? "Add stepoutdaily.com to Firebase authorized domains (Authentication > Settings > Authorized domains)" : e.message);
+            setError(e.code === "auth/unauthorized-domain" ? "Add stepoutdaily.com to Firebase authorized domains (Authentication > Settings)" : e.message);
             setLoading(false);
           }
         } else {
@@ -241,77 +235,149 @@
         }
       }
 
+      // PASSWORD RESET
+      async function handlePasswordReset() {
+        var emailToReset = resetEmail || email;
+        if (!emailToReset) { setError("Please enter your email address"); return; }
+        setError(""); setSuccess(""); setLoading(true);
+        if (firebaseReady && auth) {
+          try {
+            // First check what sign-in methods exist for this email
+            var methods = await auth.fetchSignInMethodsForEmail(emailToReset);
+            if (methods.length === 0) {
+              setError("No account found with this email. Try creating one.");
+              setLoading(false);
+              return;
+            }
+            if (methods.includes("google.com") && !methods.includes("password")) {
+              // Google-only account
+              setError("This account uses Google Sign-In. To reset your password, go to myaccount.google.com and use Google's password recovery.");
+              setLoading(false);
+              return;
+            }
+            // Has email/password — send reset
+            await auth.sendPasswordResetEmail(emailToReset);
+            setSuccess("Password reset email sent! Check your inbox (and spam folder) for a link to reset your password.");
+            setLoading(false);
+          } catch(e) {
+            if (e.code === "auth/user-not-found") {
+              setError("No account found with this email.");
+            } else if (e.code === "auth/too-many-requests") {
+              setError("Too many reset attempts. Please wait a few minutes and try again.");
+            } else {
+              setError(e.message);
+            }
+            setLoading(false);
+          }
+        } else {
+          setError("Password reset requires an internet connection.");
+          setLoading(false);
+        }
+      }
+
+      // WELCOME
       if (mode === "welcome") {
         return (
-          <div style={{ maxWidth: 390, margin: "0 auto", minHeight: "100vh", background: "linear-gradient(170deg, #1a2e1a 0%, #0f1f0f 40%, #0a160a 100%)", fontFamily: "'Instrument Sans', 'Avenir Next', system-ui, sans-serif", color: "#e8efe4", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 28px", position: "relative", overflow: "hidden" }}>
-            <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
+          <div style={{...pageWrap, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 28px", position: "relative", overflow: "hidden" }}>
+            <link href={fontLink} rel="stylesheet" />
             <div style={{ position: "absolute", top: -80, right: -80, width: 260, height: 260, background: "radial-gradient(circle, rgba(134,194,108,0.15) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" }} />
             <div style={{ position: "absolute", bottom: 80, left: -60, width: 200, height: 200, background: "radial-gradient(circle, rgba(194,168,108,0.1) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" }} />
-
             <div style={{ fontSize: 64, marginBottom: 16 }}>🚶‍♀️</div>
             <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 42, fontWeight: 700, margin: "0 0 4px", color: "#f0f7ec", textAlign: "center" }}>Step<span style={{ color: "#86c26c" }}>Out</span></h1>
             <div style={{ fontSize: 16, color: "#86c26c", fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>Daily</div>
             <div style={{ fontSize: 16, color: "#8a9a7e", textAlign: "center", lineHeight: 1.5, marginBottom: 40, maxWidth: 280 }}>Walk more. Live longer. Build daily habits that add years to your life.</div>
-
             <button onClick={handleGoogleSignIn} disabled={loading} style={googleBtn}><GoogleIcon /> Continue with Google</button>
-
-            <div style={{ display: "flex", alignItems: "center", gap: 16, width: "100%", margin: "8px 0 20px" }}>
-              <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.1)" }} />
-              <span style={{ fontSize: 12, color: "#5a6a50" }}>or</span>
-              <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.1)" }} />
-            </div>
-
-            <button onClick={() => setMode("signup")} style={primaryBtn}>Create an Account</button>
-            <button onClick={() => setMode("login")} style={{ background: "none", border: "none", color: "#86c26c", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: "8px 0" }}>Already have an account? Sign In</button>
-            {error && <div style={{ color: "#e07060", fontSize: 13, marginTop: 12, padding: "10px 14px", background: "rgba(224,112,96,0.1)", borderRadius: 10, textAlign: "center" }}>{error}</div>}
+            <div style={{ display: "flex", alignItems: "center", gap: 16, width: "100%", margin: "8px 0 20px" }}><div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.1)" }} /><span style={{ fontSize: 12, color: "#5a6a50" }}>or</span><div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.1)" }} /></div>
+            <button onClick={function() { setMode("signup"); setError(""); setSuccess(""); }} style={primaryBtn}>Create an Account</button>
+            <button onClick={function() { setMode("login"); setError(""); setSuccess(""); }} style={linkBtn}>Already have an account? Sign In</button>
+            {errBox(error)}
             <div style={{ fontSize: 11, color: "#4a5a40", textAlign: "center", marginTop: 24, lineHeight: 1.5, maxWidth: 280 }}>By continuing, you agree to our Terms of Service and Privacy Policy</div>
           </div>
         );
       }
 
+      // SIGN UP
       if (mode === "signup") {
         return (
-          <div style={{ maxWidth: 390, margin: "0 auto", minHeight: "100vh", background: "linear-gradient(170deg, #1a2e1a 0%, #0f1f0f 40%, #0a160a 100%)", fontFamily: "'Instrument Sans', 'Avenir Next', system-ui, sans-serif", color: "#e8efe4", padding: "60px 28px" }}>
-            <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
-            <button onClick={() => { setMode("welcome"); setError(""); }} style={{ background: "none", border: "none", color: "#86c26c", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 0, marginBottom: 32 }}>← Back</button>
+          <div style={{...pageWrap, padding: "60px 28px" }}>
+            <link href={fontLink} rel="stylesheet" />
+            <button onClick={function() { setMode("welcome"); setError(""); setSuccess(""); }} style={backBtn}>← Back</button>
             <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, color: "#f0f7ec", marginBottom: 6 }}>Create Your Account</h2>
             <p style={{ fontSize: 14, color: "#8a9a7e", marginBottom: 28 }}>Start your longevity journey today</p>
             <input type="text" placeholder="Your Name (optional)" value={name} onChange={function(e) { setName(e.target.value); }} style={inputStyle} />
             <input type="email" placeholder="Email Address" value={email} onChange={function(e) { setEmail(e.target.value); }} style={inputStyle} />
             <input type="password" placeholder="Password (6+ characters)" value={password} onChange={function(e) { setPassword(e.target.value); }} style={inputStyle} />
-            {error && <div style={{ color: "#e07060", fontSize: 13, marginBottom: 12, padding: "10px 14px", background: "rgba(224,112,96,0.1)", borderRadius: 10 }}>{error}</div>}
+            {errBox(error)}
             <button onClick={handleEmailSignUp} disabled={loading} style={{...primaryBtn, opacity: loading ? 0.6 : 1}}>{loading ? "Creating Account..." : "Create Account"}</button>
             <button onClick={handleGoogleSignIn} disabled={loading} style={googleBtn}><GoogleIcon /> Or continue with Google</button>
-            <button onClick={() => { setMode("login"); setError(""); }} style={{ background: "none", border: "none", color: "#86c26c", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: "8px 0", width: "100%" }}>Already have an account? Sign In</button>
+            <button onClick={function() { setMode("login"); setError(""); setSuccess(""); }} style={{...linkBtn, width: "100%"}}>Already have an account? Sign In</button>
           </div>
         );
       }
 
-      return (
-        <div style={{ maxWidth: 390, margin: "0 auto", minHeight: "100vh", background: "linear-gradient(170deg, #1a2e1a 0%, #0f1f0f 40%, #0a160a 100%)", fontFamily: "'Instrument Sans', 'Avenir Next', system-ui, sans-serif", color: "#e8efe4", padding: "60px 28px" }}>
-          <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
-          <button onClick={() => { setMode("welcome"); setError(""); }} style={{ background: "none", border: "none", color: "#86c26c", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 0, marginBottom: 32 }}>← Back</button>
-          <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, color: "#f0f7ec", marginBottom: 6 }}>Welcome Back</h2>
-          <p style={{ fontSize: 14, color: "#8a9a7e", marginBottom: 28 }}>Sign in to continue your streak</p>
-          <input type="email" placeholder="Email Address" value={email} onChange={function(e) { setEmail(e.target.value); }} style={inputStyle} />
-          <input type="password" placeholder="Password" value={password} onChange={function(e) { setPassword(e.target.value); }} style={inputStyle} />
-          {error && <div style={{ color: "#e07060", fontSize: 13, marginBottom: 12, padding: "10px 14px", background: "rgba(224,112,96,0.1)", borderRadius: 10 }}>{error}</div>}
-          <button onClick={handleEmailSignIn} disabled={loading} style={{...primaryBtn, opacity: loading ? 0.6 : 1}}>{loading ? "Signing In..." : "Sign In"}</button>
-          <button onClick={handleGoogleSignIn} disabled={loading} style={googleBtn}><GoogleIcon /> Or continue with Google</button>
-          <button onClick={() => { setMode("signup"); setError(""); }} style={{ background: "none", border: "none", color: "#86c26c", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: "8px 0", width: "100%" }}>Don't have an account? Create One</button>
-        </div>
-      );
+      // LOGIN
+      if (mode === "login") {
+        return (
+          <div style={{...pageWrap, padding: "60px 28px" }}>
+            <link href={fontLink} rel="stylesheet" />
+            <button onClick={function() { setMode("welcome"); setError(""); setSuccess(""); }} style={backBtn}>← Back</button>
+            <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, color: "#f0f7ec", marginBottom: 6 }}>Welcome Back</h2>
+            <p style={{ fontSize: 14, color: "#8a9a7e", marginBottom: 28 }}>Sign in to continue your streak</p>
+            <input type="email" placeholder="Email Address" value={email} onChange={function(e) { setEmail(e.target.value); }} style={inputStyle} />
+            <input type="password" placeholder="Password" value={password} onChange={function(e) { setPassword(e.target.value); }} style={inputStyle} />
+            {errBox(error)}
+            {successBox(success)}
+            <button onClick={handleEmailSignIn} disabled={loading} style={{...primaryBtn, opacity: loading ? 0.6 : 1}}>{loading ? "Signing In..." : "Sign In"}</button>
+
+            {/* FORGOT PASSWORD LINK */}
+            <button onClick={function() { setMode("forgot"); setError(""); setSuccess(""); setResetEmail(email); }} style={{ background: "none", border: "none", color: "#c2a86c", fontSize: 13, cursor: "pointer", fontFamily: "inherit", padding: "4px 0", marginBottom: 12, width: "100%", textAlign: "center" }}>Forgot your password?</button>
+
+            <button onClick={handleGoogleSignIn} disabled={loading} style={googleBtn}><GoogleIcon /> Or continue with Google</button>
+            <button onClick={function() { setMode("signup"); setError(""); setSuccess(""); }} style={{...linkBtn, width: "100%"}}>Don't have an account? Create One</button>
+          </div>
+        );
+      }
+
+      // FORGOT PASSWORD
+      if (mode === "forgot") {
+        return (
+          <div style={{...pageWrap, padding: "60px 28px" }}>
+            <link href={fontLink} rel="stylesheet" />
+            <button onClick={function() { setMode("login"); setError(""); setSuccess(""); }} style={backBtn}>← Back to Sign In</button>
+
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🔑</div>
+            <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, color: "#f0f7ec", marginBottom: 6 }}>Reset Password</h2>
+            <p style={{ fontSize: 14, color: "#8a9a7e", marginBottom: 28, lineHeight: 1.5 }}>Enter the email address you used to create your account. We will send you a link to reset your password.</p>
+
+            <input type="email" placeholder="Email Address" value={resetEmail} onChange={function(e) { setResetEmail(e.target.value); }} style={inputStyle} />
+
+            {errBox(error)}
+            {successBox(success)}
+
+            <button onClick={handlePasswordReset} disabled={loading} style={{...primaryBtn, opacity: loading ? 0.6 : 1}}>{loading ? "Sending..." : "Send Reset Link"}</button>
+
+            <div style={{ background: "rgba(194,168,108,0.08)", border: "1px solid rgba(194,168,108,0.15)", borderRadius: 16, padding: 18, marginTop: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "#c2a86c", marginBottom: 8 }}>💡 Tips</div>
+              <div style={{ fontSize: 13, color: "#a89a70", lineHeight: 1.6 }}>
+                <div style={{ marginBottom: 6 }}>• If you signed up with <strong style={{ color: "#e8efe4" }}>Google</strong>, you don't have a StepOut password. Use the "Continue with Google" button to sign in instead.</div>
+                <div style={{ marginBottom: 6 }}>• Check your <strong style={{ color: "#e8efe4" }}>spam/junk folder</strong> if you don't see the reset email.</div>
+                <div>• The reset link expires after 1 hour.</div>
+              </div>
+            </div>
+
+            <button onClick={function() { setMode("welcome"); setError(""); setSuccess(""); }} style={{...linkBtn, width: "100%", marginTop: 20 }}>Back to Sign In Options</button>
+          </div>
+        );
+      }
+
+      return null;
     }
 
     /* =========== INSTALL PROMPT =========== */
     function InstallPrompt({ onDismiss }) {
       const [isIOS, setIsIOS] = useState(false);
       const [isAndroid, setIsAndroid] = useState(false);
-      useEffect(function() {
-        var ua = navigator.userAgent || "";
-        setIsIOS(/iPad|iPhone|iPod/.test(ua));
-        setIsAndroid(/Android/.test(ua));
-      }, []);
+      useEffect(function() { var ua = navigator.userAgent || ""; setIsIOS(/iPad|iPhone|iPod/.test(ua)); setIsAndroid(/Android/.test(ua)); }, []);
       if (!isIOS && !isAndroid) return null;
       return (
         <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 390, zIndex: 1000, background: "linear-gradient(to top, #1a2e1a 80%, transparent)", padding: "40px 24px 32px" }}>
@@ -322,15 +388,15 @@
             </div>
             {isIOS ? (
               <div style={{ fontSize: 13, color: "#a8c89a", lineHeight: 1.6 }}>
-                <div style={{ marginBottom: 8 }}><strong style={{ color: "#e8efe4" }}>Step 1:</strong> Tap the Share button 📤 at the bottom</div>
-                <div style={{ marginBottom: 8 }}><strong style={{ color: "#e8efe4" }}>Step 2:</strong> Tap <strong style={{ color: "#e8efe4" }}>Add to Home Screen</strong></div>
-                <div><strong style={{ color: "#e8efe4" }}>Step 3:</strong> Tap <strong style={{ color: "#e8efe4" }}>Add</strong></div>
+                <div style={{ marginBottom: 8 }}><strong style={{ color: "#e8efe4" }}>1.</strong> Tap the Share button 📤 at the bottom</div>
+                <div style={{ marginBottom: 8 }}><strong style={{ color: "#e8efe4" }}>2.</strong> Tap <strong style={{ color: "#e8efe4" }}>Add to Home Screen</strong></div>
+                <div><strong style={{ color: "#e8efe4" }}>3.</strong> Tap <strong style={{ color: "#e8efe4" }}>Add</strong></div>
               </div>
             ) : (
               <div style={{ fontSize: 13, color: "#a8c89a", lineHeight: 1.6 }}>
-                <div style={{ marginBottom: 8 }}><strong style={{ color: "#e8efe4" }}>Step 1:</strong> Tap the menu (three dots) top right</div>
-                <div style={{ marginBottom: 8 }}><strong style={{ color: "#e8efe4" }}>Step 2:</strong> Tap <strong style={{ color: "#e8efe4" }}>Add to Home screen</strong></div>
-                <div><strong style={{ color: "#e8efe4" }}>Step 3:</strong> Tap <strong style={{ color: "#e8efe4" }}>Add</strong></div>
+                <div style={{ marginBottom: 8 }}><strong style={{ color: "#e8efe4" }}>1.</strong> Tap the menu (three dots) top right</div>
+                <div style={{ marginBottom: 8 }}><strong style={{ color: "#e8efe4" }}>2.</strong> Tap <strong style={{ color: "#e8efe4" }}>Add to Home screen</strong></div>
+                <div><strong style={{ color: "#e8efe4" }}>3.</strong> Tap <strong style={{ color: "#e8efe4" }}>Add</strong></div>
               </div>
             )}
           </div>
@@ -354,43 +420,53 @@
       const [dailyQuote] = useState(LONGEVITY_QUOTES[Math.floor(Math.random() * LONGEVITY_QUOTES.length)]);
       const [showInstall, setShowInstall] = useState(false);
       const [showProfile, setShowProfile] = useState(false);
-
       const [streak, setStreak] = useState(0);
       const [weekLog, setWeekLog] = useState({});
       const [weeklyMins, setWeeklyMins] = useState(0);
       const [missedWalk, setMissedWalk] = useState(false);
-
       const [hourlyWeather, setHourlyWeather] = useState([]);
       const [weeklyWeather, setWeeklyWeather] = useState([]);
       const [weatherLoading, setWeatherLoading] = useState(true);
       const [locationError, setLocationError] = useState(false);
+      const [scheduledWalk, setScheduledWalk] = useState(null);
+      const [walkScheduled, setWalkScheduled] = useState(false);
+      const [todayLogged, setTodayLogged] = useState(false);
 
-      // NEW: Scheduled walk state (separate from logging)
-      const [scheduledWalk, setScheduledWalk] = useState(null); // { time, slot }
-      const [walkScheduled, setWalkScheduled] = useState(false); // calendar event created
-      const [todayLogged, setTodayLogged] = useState(false); // actually confirmed they did it
+      // Password change state (in-app)
+      const [showPasswordChange, setShowPasswordChange] = useState(false);
+      const [passwordMsg, setPasswordMsg] = useState("");
+      const [passwordErr, setPasswordErr] = useState("");
 
-      useEffect(function() {
-        // Check if today is already logged
-        if (weekLog[todayIdx]) setTodayLogged(true);
-      }, [weekLog]);
+      async function handleSendPasswordReset() {
+        setPasswordMsg(""); setPasswordErr("");
+        if (user.provider === "google") {
+          setPasswordErr("Your account uses Google Sign-In. To change your password, go to myaccount.google.com");
+          return;
+        }
+        if (firebaseReady && auth && auth.currentUser) {
+          try {
+            await auth.sendPasswordResetEmail(auth.currentUser.email);
+            setPasswordMsg("Password reset email sent to " + auth.currentUser.email + "! Check your inbox.");
+          } catch(e) {
+            setPasswordErr(e.message);
+          }
+        } else {
+          setPasswordErr("Unable to send reset email. Try signing out and using Forgot Password on the login screen.");
+        }
+      }
+
+      useEffect(function() { if (weekLog[todayIdx]) setTodayLogged(true); }, [weekLog]);
 
       useEffect(function() {
         var dismissed = localStorage.getItem("stepout_install_dismissed");
-        if (!dismissed) {
-          var timer = setTimeout(function() { setShowInstall(true); }, 5000);
-          return function() { clearTimeout(timer); };
-        }
+        if (!dismissed) { var timer = setTimeout(function() { setShowInstall(true); }, 5000); return function() { clearTimeout(timer); }; }
       }, []);
 
       useEffect(function() {
         async function loadData() {
           var data = null;
           if (user.provider !== "offline") data = await loadUserData(user.uid);
-          if (!data) {
-            var local = localStorage.getItem("stepout_data_" + user.uid);
-            if (local) data = JSON.parse(local);
-          }
+          if (!data) { var local = localStorage.getItem("stepout_data_" + user.uid); if (local) data = JSON.parse(local); }
           if (data) {
             if (data.streak) setStreak(data.streak);
             if (data.weekLog) setWeekLog(data.weekLog);
@@ -413,12 +489,10 @@
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             async function(pos) {
-              var lat = pos.coords.latitude.toFixed(4);
-              var lon = pos.coords.longitude.toFixed(4);
+              var lat = pos.coords.latitude.toFixed(4); var lon = pos.coords.longitude.toFixed(4);
               var wd = await fetchWeather(lat, lon);
               if (wd && wd.hourly) {
-                var now = new Date();
-                var periods = wd.hourly.properties.periods || [];
+                var now = new Date(); var periods = wd.hourly.properties.periods || [];
                 var th = periods.filter(function(p) { var d = new Date(p.startTime); return d.getDate() === now.getDate() && d.getHours() >= 7 && d.getHours() <= 17; }).map(function(p) {
                   return { time: new Date(p.startTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }), temp: p.temperature, condition: p.shortForecast, icon: getWeatherIcon(p.shortForecast), windMph: p.windSpeed ? parseInt(p.windSpeed) : 0, good: isGoodWeather(p.shortForecast) };
                 });
@@ -471,7 +545,6 @@
       }).concat(hourlyWeather.filter(function(w) { return !w.good; }).map(function(w) {
         return { time: w.time, weather: w, score: 0, isOutdoor: false };
       })).sort(function(a, b) { return b.score - a.score; });
-
       var bestOutdoor = suggestions.find(function(s) { return s.isOutdoor; });
 
       useEffect(function() { setFadeIn(false); var t = setTimeout(function() { setFadeIn(true); }, 50); return function() { clearTimeout(t); }; }, [screen]);
@@ -482,42 +555,30 @@
       var daysCompleted = Object.keys(weekLog).length;
       var progressPct = Math.round((daysCompleted / 7) * 100);
 
-      // LOG activity — only when user CONFIRMS they did it
       function logActivity(type) {
-        var newLog = Object.assign({}, weekLog);
-        newLog[todayIdx] = type;
-        setWeekLog(newLog);
+        var newLog = Object.assign({}, weekLog); newLog[todayIdx] = type; setWeekLog(newLog);
         setWeeklyMins(function(prev) { return prev + duration; });
         setStreak(function(prev) { return prev + 1; });
-        setMissedWalk(false);
-        setTodayLogged(true);
+        setMissedWalk(false); setTodayLogged(true);
       }
 
-      // SCHEDULE walk — just adds to calendar, does NOT log
       function scheduleWalkToCalendar(slot) {
-        var now = new Date();
-        var timeParts = slot.time.match(/(\d+)/);
-        var hour = parseInt(timeParts[1]);
-        var isPM = slot.time.toLowerCase().includes("pm");
-        var hour24 = isPM && hour !== 12 ? hour + 12 : hour;
+        var now = new Date(); var timeParts = slot.time.match(/(\d+)/); var hour = parseInt(timeParts[1]);
+        var isPM = slot.time.toLowerCase().includes("pm"); var hour24 = isPM && hour !== 12 ? hour + 12 : hour;
         if (!isPM && hour === 12) hour24 = 0;
         var start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour24, 0);
         var end = new Date(start.getTime() + duration * 60000);
         function fmt(d) { return d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'; }
-        var calUrl = "https://calendar.google.com/calendar/render?action=TEMPLATE&text=" + encodeURIComponent(duration + "-Min StepOut Walk") + "&dates=" + fmt(start) + "/" + fmt(end) + "&details=" + encodeURIComponent("Your scheduled StepOut Daily walk!");
-        window.open(calUrl, '_blank');
-        setScheduledWalk({ time: slot.time });
-        setWalkScheduled(true);
+        window.open("https://calendar.google.com/calendar/render?action=TEMPLATE&text=" + encodeURIComponent(duration + "-Min StepOut Walk") + "&dates=" + fmt(start) + "/" + fmt(end) + "&details=" + encodeURIComponent("Your scheduled StepOut Daily walk!"), '_blank');
+        setScheduledWalk({ time: slot.time }); setWalkScheduled(true);
       }
 
-      var pillStyle = function(active) {
-        return { flex: 1, padding: "12px 0", borderRadius: 12, border: "none", cursor: "pointer", fontSize: 15, fontWeight: 600, fontFamily: "inherit", background: active ? "#86c26c" : "rgba(255,255,255,0.06)", color: active ? "#0a160a" : "#8a9a7e" };
-      };
+      var pillStyle = function(active) { return { flex: 1, padding: "12px 0", borderRadius: 12, border: "none", cursor: "pointer", fontSize: 15, fontWeight: 600, fontFamily: "inherit", background: active ? "#86c26c" : "rgba(255,255,255,0.06)", color: active ? "#0a160a" : "#8a9a7e" }; };
       var cardStyle = { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: "16px 18px" };
 
       return (
-        <div style={{ maxWidth: 390, margin: "0 auto", minHeight: "100vh", background: "linear-gradient(170deg, #1a2e1a 0%, #0f1f0f 40%, #0a160a 100%)", fontFamily: "'Instrument Sans', 'Avenir Next', system-ui, sans-serif", color: "#e8efe4", position: "relative", overflow: "hidden" }}>
-          <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet" />
+        <div style={{...pageWrap, position: "relative", overflow: "hidden" }}>
+          <link href={fontLink} rel="stylesheet" />
           <div style={{ position: "absolute", top: -80, right: -80, width: 260, height: 260, background: "radial-gradient(circle, rgba(134,194,108,0.12) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" }} />
           <div style={{ position: "absolute", bottom: 100, left: -60, width: 200, height: 200, background: "radial-gradient(circle, rgba(194,168,108,0.08) 0%, transparent 70%)", borderRadius: "50%", pointerEvents: "none" }} />
 
@@ -535,12 +596,40 @@
                   <button onClick={function() { setShowProfile(!showProfile); }} style={{ background: "rgba(134,194,108,0.1)", border: "1px solid rgba(134,194,108,0.2)", borderRadius: 12, width: 42, height: 42, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16, marginTop: 4, color: "#86c26c" }}>{user.name ? user.name.charAt(0).toUpperCase() : "👤"}</button>
                 </div>
 
+                {/* PROFILE DROPDOWN */}
                 {showProfile && (
                   <div style={{ background: "rgba(20,35,20,0.95)", border: "1px solid rgba(134,194,108,0.2)", borderRadius: 16, padding: 18, marginBottom: 20, boxShadow: "0 8px 32px rgba(0,0,0,0.4)" }}>
                     <div style={{ fontSize: 15, fontWeight: 600, color: "#e8efe4", marginBottom: 4 }}>{user.name || "User"}</div>
-                    <div style={{ fontSize: 12, color: "#6b7a60", marginBottom: 14 }}>{user.email}</div>
-                    <button onClick={function() { setShowSettings(!showSettings); }} style={{ width: "100%", padding: "10px 0", borderRadius: 10, cursor: "pointer", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#a8c89a", fontSize: 13, fontWeight: 600, fontFamily: "inherit", marginBottom: 8 }}>⚙️ Settings</button>
+                    <div style={{ fontSize: 12, color: "#6b7a60", marginBottom: 4 }}>{user.email}</div>
+                    <div style={{ fontSize: 11, color: "#5a6a50", marginBottom: 14 }}>Signed in with {user.provider === "google" ? "Google" : "Email"}</div>
+
+                    <button onClick={function() { setShowSettings(!showSettings); }} style={{ width: "100%", padding: "10px 0", borderRadius: 10, cursor: "pointer", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#a8c89a", fontSize: 13, fontWeight: 600, fontFamily: "inherit", marginBottom: 8 }}>⚙️ Walk Settings</button>
+
+                    {/* CHANGE PASSWORD BUTTON */}
+                    <button onClick={function() { setShowPasswordChange(!showPasswordChange); setPasswordMsg(""); setPasswordErr(""); }} style={{ width: "100%", padding: "10px 0", borderRadius: 10, cursor: "pointer", background: "rgba(194,168,108,0.08)", border: "1px solid rgba(194,168,108,0.15)", color: "#c2a86c", fontSize: 13, fontWeight: 600, fontFamily: "inherit", marginBottom: 8 }}>🔑 Change Password</button>
+
                     <button onClick={onLogout} style={{ width: "100%", padding: "10px 0", borderRadius: 10, cursor: "pointer", background: "rgba(194,108,108,0.1)", border: "1px solid rgba(194,108,108,0.2)", color: "#c27060", fontSize: 13, fontWeight: 600, fontFamily: "inherit" }}>Sign Out</button>
+
+                    {/* PASSWORD CHANGE PANEL */}
+                    {showPasswordChange && (
+                      <div style={{ marginTop: 14, padding: 16, borderRadius: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                        {user.provider === "google" ? (
+                          <div>
+                            <div style={{ fontSize: 13, color: "#c2a86c", marginBottom: 8 }}>Your account uses Google Sign-In.</div>
+                            <div style={{ fontSize: 12, color: "#8a9a7e", lineHeight: 1.5, marginBottom: 12 }}>To change your password, visit your Google Account settings at myaccount.google.com</div>
+                            <button onClick={function() { window.open("https://myaccount.google.com/security", "_blank"); }} style={{ width: "100%", padding: "10px 0", borderRadius: 10, cursor: "pointer", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#a8c89a", fontSize: 12, fontWeight: 600, fontFamily: "inherit" }}>Open Google Account Settings</button>
+                          </div>
+                        ) : (
+                          <div>
+                            <div style={{ fontSize: 13, color: "#e8efe4", marginBottom: 8 }}>We will send a password reset link to:</div>
+                            <div style={{ fontSize: 14, color: "#86c26c", fontWeight: 600, marginBottom: 12 }}>{user.email}</div>
+                            {passwordErr && <div style={{ color: "#e07060", fontSize: 12, marginBottom: 8, padding: "8px 12px", background: "rgba(224,112,96,0.1)", borderRadius: 8 }}>{passwordErr}</div>}
+                            {passwordMsg && <div style={{ color: "#86c26c", fontSize: 12, marginBottom: 8, padding: "8px 12px", background: "rgba(134,194,108,0.1)", borderRadius: 8 }}>{passwordMsg}</div>}
+                            <button onClick={handleSendPasswordReset} style={{ width: "100%", padding: "10px 0", borderRadius: 10, cursor: "pointer", background: "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)", border: "none", color: "#0a160a", fontSize: 13, fontWeight: 700, fontFamily: "inherit" }}>Send Reset Email</button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -554,57 +643,42 @@
                   </div>
                 )}
 
-                {/* WALK SCHEDULED BUT NOT YET CONFIRMED — "Did you do it?" banner */}
+                {/* WALK CHECK-IN BANNER */}
                 {walkScheduled && !todayLogged && (
                   <div style={{ background: "linear-gradient(135deg, rgba(134,194,108,0.12) 0%, rgba(134,194,108,0.04) 100%)", border: "1px solid rgba(134,194,108,0.3)", borderRadius: 20, padding: 22, marginBottom: 20, boxShadow: "0 4px 24px rgba(0,0,0,0.2)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
                       <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(134,194,108,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🔔</div>
-                      <div>
-                        <div style={{ fontSize: 11, color: "#6b7a60", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" }}>Walk Check-in</div>
-                        <div style={{ fontSize: 12, color: "#8a9a7e" }}>Scheduled for {scheduledWalk ? scheduledWalk.time : "today"}</div>
-                      </div>
+                      <div><div style={{ fontSize: 11, color: "#6b7a60", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" }}>Walk Check-in</div><div style={{ fontSize: 12, color: "#8a9a7e" }}>Scheduled for {scheduledWalk ? scheduledWalk.time : "today"}</div></div>
                     </div>
                     <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 18, fontWeight: 700, color: "#f0f7ec", lineHeight: 1.3, marginBottom: 6 }}>Did you complete your walk?</div>
                     <div style={{ fontSize: 14, color: "#8a9a7e", marginBottom: 18, lineHeight: 1.4 }}>Let us know so we can keep your streak going.</div>
-
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      <button onClick={function() { logActivity("walk"); setScreen("checkin_done"); }} style={{ width: "100%", padding: "14px 0", borderRadius: 12, border: "none", cursor: "pointer", background: "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)", color: "#0a160a", fontSize: 15, fontWeight: 700, fontFamily: "inherit", boxShadow: "0 2px 12px rgba(134,194,108,0.25)" }}>✅ Yes, I walked!</button>
+                      <button onClick={function() { logActivity("walk"); setScreen("checkin_done"); }} style={{ width: "100%", padding: "14px 0", borderRadius: 12, border: "none", cursor: "pointer", background: "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)", color: "#0a160a", fontSize: 15, fontWeight: 700, fontFamily: "inherit" }}>✅ Yes, I walked!</button>
                       <button onClick={function() { setIndoorActivity(getRandomActivity()); setScreen("indoor"); }} style={{ width: "100%", padding: "14px 0", borderRadius: 12, cursor: "pointer", background: "rgba(194,140,108,0.12)", border: "1px solid rgba(194,140,108,0.25)", color: "#c2946c", fontSize: 14, fontWeight: 600, fontFamily: "inherit" }}>🏠 No, but I'll do an indoor activity</button>
                       <button onClick={function() { setMissedWalk(true); setWalkScheduled(false); }} style={{ width: "100%", padding: "12px 0", borderRadius: 12, cursor: "pointer", background: "none", border: "1px solid rgba(255,255,255,0.08)", color: "#5a6a50", fontSize: 13, fontWeight: 500, fontFamily: "inherit" }}>Skip today</button>
                     </div>
-
                     <div style={{ marginTop: 14, padding: "10px 12px", borderRadius: 10, background: "rgba(255,160,60,0.06)", border: "1px solid rgba(255,160,60,0.1)", display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 16 }}>🔥</span>
-                      <div style={{ fontSize: 12, color: "#c49a5c" }}>You are on a {streak}-day streak! Don't let it slip.</div>
+                      <span style={{ fontSize: 16 }}>🔥</span><div style={{ fontSize: 12, color: "#c49a5c" }}>You are on a {streak}-day streak!</div>
                     </div>
                   </div>
                 )}
 
-                {/* Streak + Progress */}
+                {/* STREAK + PROGRESS */}
                 <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
                   <div style={{ flex: 1, background: "linear-gradient(135deg, rgba(255,160,60,0.12) 0%, rgba(255,120,20,0.05) 100%)", border: "1px solid rgba(255,160,60,0.2)", borderRadius: 16, padding: "16px 14px", textAlign: "center" }}>
                     <div style={{ fontSize: 32, marginBottom: 2 }}>🔥</div>
                     <div style={{ fontSize: 28, fontWeight: 700, color: "#ffa03c", fontFamily: "'Playfair Display', serif" }}>{streak}</div>
-                    <div style={{ fontSize: 11, color: "#c49a5c", fontWeight: 600, letterSpacing: 0.5 }}>Day Streak</div>
+                    <div style={{ fontSize: 11, color: "#c49a5c", fontWeight: 600 }}>Day Streak</div>
                   </div>
                   <div style={{ flex: 2, background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)", borderRadius: 16, padding: "14px 16px" }}>
                     <div style={{ fontSize: 11, fontWeight: 600, color: "#6b7a60", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 10 }}>This Week</div>
                     <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
                       {DAYS.map(function(d, i) {
                         var status = weekLog[i]; var isToday = i === todayIdx;
-                        return (
-                          <div key={i} style={{ flex: 1, textAlign: "center" }}>
-                            <div style={{ fontSize: 10, color: isToday ? "#86c26c" : "#5a6a50", marginBottom: 4, fontWeight: isToday ? 700 : 400 }}>{d}</div>
-                            <div style={{ width: 28, height: 28, borderRadius: "50%", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, background: status === "walk" ? "rgba(134,194,108,0.25)" : status === "indoor" ? "rgba(194,168,108,0.25)" : isToday ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)", border: isToday ? "2px solid #86c26c" : "1px solid rgba(255,255,255,0.06)" }}>
-                              {status === "walk" ? "🚶" : status === "indoor" ? "🏠" : ""}
-                            </div>
-                          </div>
-                        );
+                        return (<div key={i} style={{ flex: 1, textAlign: "center" }}><div style={{ fontSize: 10, color: isToday ? "#86c26c" : "#5a6a50", marginBottom: 4, fontWeight: isToday ? 700 : 400 }}>{d}</div><div style={{ width: 28, height: 28, borderRadius: "50%", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, background: status === "walk" ? "rgba(134,194,108,0.25)" : status === "indoor" ? "rgba(194,168,108,0.25)" : isToday ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)", border: isToday ? "2px solid #86c26c" : "1px solid rgba(255,255,255,0.06)" }}>{status === "walk" ? "🚶" : status === "indoor" ? "🏠" : ""}</div></div>);
                       })}
                     </div>
-                    <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: progressPct + "%", borderRadius: 3, background: "linear-gradient(90deg, #86c26c, #a8d98a)", transition: "width 0.5s ease" }} />
-                    </div>
+                    <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}><div style={{ height: "100%", width: progressPct + "%", borderRadius: 3, background: "linear-gradient(90deg, #86c26c, #a8d98a)" }} /></div>
                     <div style={{ fontSize: 11, color: "#6b7a60", marginTop: 6 }}>{daysCompleted}/7 days active</div>
                   </div>
                 </div>
@@ -617,7 +691,7 @@
                   <div style={{ fontSize: 11, fontWeight: 600, color: "#86c26c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>🧬 Your Longevity Impact This Week</div>
                   <div style={{ fontSize: 26, fontWeight: 700, color: "#e8efe4", fontFamily: "'Playfair Display', serif" }}>{weeklyMins} minutes</div>
                   {currentMilestone && <div style={{ fontSize: 13, color: "#a8c89a", marginTop: 4 }}>✅ {currentMilestone.label}</div>}
-                  {nextMilestone && <div style={{ fontSize: 12, color: "#6b7a60", marginTop: 6 }}>Next milestone: {nextMilestone.mins} min — {nextMilestone.mins - weeklyMins} min to go</div>}
+                  {nextMilestone && <div style={{ fontSize: 12, color: "#6b7a60", marginTop: 6 }}>Next: {nextMilestone.mins} min — {nextMilestone.mins - weeklyMins} to go</div>}
                 </div>
 
                 {missedWalk && (
@@ -637,13 +711,7 @@
                   <div style={{ fontSize: 13, fontWeight: 600, color: "#6b7a60", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 14 }}>{weatherLoading ? "Loading Weather..." : locationError ? "Today's Weather (sample)" : "Today's Weather"}</div>
                   <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 8, scrollbarWidth: "none" }}>
                     {hourlyWeather.map(function(w, i) {
-                      return (
-                        <div key={i} style={{ minWidth: 62, padding: "10px 6px", borderRadius: 14, textAlign: "center", background: w.good ? "rgba(134,194,108,0.08)" : "rgba(194,108,108,0.08)", border: "1px solid " + (w.good ? "rgba(134,194,108,0.15)" : "rgba(194,108,108,0.15)") }}>
-                          <div style={{ fontSize: 10, color: "#8a9a7e", marginBottom: 4 }}>{w.time}</div>
-                          <div style={{ fontSize: 20, marginBottom: 2 }}>{w.icon}</div>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: "#e8efe4" }}>{w.temp}°</div>
-                        </div>
-                      );
+                      return (<div key={i} style={{ minWidth: 62, padding: "10px 6px", borderRadius: 14, textAlign: "center", background: w.good ? "rgba(134,194,108,0.08)" : "rgba(194,108,108,0.08)", border: "1px solid " + (w.good ? "rgba(134,194,108,0.15)" : "rgba(194,108,108,0.15)") }}><div style={{ fontSize: 10, color: "#8a9a7e", marginBottom: 4 }}>{w.time}</div><div style={{ fontSize: 20, marginBottom: 2 }}>{w.icon}</div><div style={{ fontSize: 13, fontWeight: 600, color: "#e8efe4" }}>{w.temp}°</div></div>);
                     })}
                   </div>
                   {locationError && <div style={{ fontSize: 11, color: "#6b7a60", marginTop: 8 }}>📍 Allow location access for your real local weather</div>}
@@ -654,10 +722,7 @@
                     <div style={{ fontSize: 13, fontWeight: 600, color: "#6b7a60", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 14 }}>⭐ Best Time to Walk</div>
                     <button onClick={function() { setSelectedSlot(bestOutdoor); setScreen("detail"); }} style={{ width: "100%", background: "linear-gradient(135deg, rgba(134,194,108,0.15) 0%, rgba(134,194,108,0.05) 100%)", border: "1px solid rgba(134,194,108,0.3)", borderRadius: 20, padding: 22, cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div>
-                          <div style={{ fontSize: 28, fontWeight: 700, color: "#86c26c", fontFamily: "'Playfair Display', serif" }}>{bestOutdoor.time}</div>
-                          <div style={{ fontSize: 14, color: "#b0c4a4", marginTop: 4 }}>{bestOutdoor.weather.icon} {bestOutdoor.weather.temp}° · {bestOutdoor.weather.condition} · {duration} min walk</div>
-                        </div>
+                        <div><div style={{ fontSize: 28, fontWeight: 700, color: "#86c26c", fontFamily: "'Playfair Display', serif" }}>{bestOutdoor.time}</div><div style={{ fontSize: 14, color: "#b0c4a4", marginTop: 4 }}>{bestOutdoor.weather.icon} {bestOutdoor.weather.temp}° · {bestOutdoor.weather.condition} · {duration} min walk</div></div>
                         <div style={{ fontSize: 28, opacity: 0.6 }}>→</div>
                       </div>
                     </button>
@@ -668,79 +733,52 @@
                   <div style={{ fontSize: 13, fontWeight: 600, color: "#6b7a60", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 14 }}>All Available Slots</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     {suggestions.slice(0, 6).map(function(s, i) {
-                      return (
-                        <button key={i} onClick={function() { if (s.isOutdoor) { setSelectedSlot(s); setScreen("detail"); } else { setIndoorActivity(getRandomActivity()); setScreen("indoor"); } }} style={{ width: "100%", background: cardStyle.background, border: cardStyle.border, borderRadius: cardStyle.borderRadius, padding: cardStyle.padding, cursor: "pointer", textAlign: "left", fontFamily: "inherit", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            <span style={{ fontSize: 22 }}>{s.weather.icon}</span>
-                            <div>
-                              <div style={{ fontSize: 15, fontWeight: 600, color: "#e8efe4" }}>{s.time}</div>
-                              <div style={{ fontSize: 12, color: "#8a9a7e" }}>{s.weather.temp}° · {s.weather.condition}</div>
-                            </div>
-                          </div>
-                          <div style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, background: s.isOutdoor ? "rgba(134,194,108,0.15)" : "rgba(194,140,108,0.15)", color: s.isOutdoor ? "#86c26c" : "#c2946c" }}>{s.isOutdoor ? "Walk" : "Indoor"}</div>
-                        </button>
-                      );
+                      return (<button key={i} onClick={function() { if (s.isOutdoor) { setSelectedSlot(s); setScreen("detail"); } else { setIndoorActivity(getRandomActivity()); setScreen("indoor"); } }} style={{ width: "100%", background: cardStyle.background, border: cardStyle.border, borderRadius: cardStyle.borderRadius, padding: cardStyle.padding, cursor: "pointer", textAlign: "left", fontFamily: "inherit", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}><span style={{ fontSize: 22 }}>{s.weather.icon}</span><div><div style={{ fontSize: 15, fontWeight: 600, color: "#e8efe4" }}>{s.time}</div><div style={{ fontSize: 12, color: "#8a9a7e" }}>{s.weather.temp}° · {s.weather.condition}</div></div></div>
+                        <div style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, background: s.isOutdoor ? "rgba(134,194,108,0.15)" : "rgba(194,140,108,0.15)", color: s.isOutdoor ? "#86c26c" : "#c2946c" }}>{s.isOutdoor ? "Walk" : "Indoor"}</div>
+                      </button>);
                     })}
                   </div>
                 </div>
               </div>
             )}
 
-            {/* DETAIL — Schedule or Log */}
+            {/* DETAIL */}
             {screen === "detail" && selectedSlot && (
               <div style={{ padding: "56px 24px 24px" }}>
-                <button onClick={function() { setScreen("home"); }} style={{ background: "none", border: "none", color: "#86c26c", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 0, marginBottom: 24 }}>← Back</button>
-
+                <button onClick={function() { setScreen("home"); }} style={backBtn}>← Back</button>
                 <div style={{ textAlign: "center", padding: "32px 0 24px" }}>
                   <div style={{ fontSize: 56, marginBottom: 12 }}>{selectedSlot.weather.icon}</div>
                   <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 32, fontWeight: 700, margin: 0, color: "#f0f7ec" }}>{selectedSlot.time}</h2>
                   <div style={{ fontSize: 16, color: "#8a9a7e", marginTop: 8 }}>{selectedSlot.weather.temp}° · {selectedSlot.weather.condition} · Wind {selectedSlot.weather.windMph} mph</div>
                 </div>
-
                 <div style={{ background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)", borderRadius: 20, padding: 24, marginBottom: 24 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
-                    <div><div style={{ fontSize: 12, color: "#6b7a60", textTransform: "uppercase", letterSpacing: 1 }}>Duration</div><div style={{ fontSize: 20, fontWeight: 700, color: "#e8efe4" }}>{duration} minutes</div></div>
-                    <div style={{ textAlign: "right" }}><div style={{ fontSize: 12, color: "#6b7a60", textTransform: "uppercase", letterSpacing: 1 }}>Type</div><div style={{ fontSize: 20, fontWeight: 700, color: "#86c26c" }}>Outdoor Walk</div></div>
+                    <div><div style={{ fontSize: 12, color: "#6b7a60", textTransform: "uppercase" }}>Duration</div><div style={{ fontSize: 20, fontWeight: 700, color: "#e8efe4" }}>{duration} min</div></div>
+                    <div style={{ textAlign: "right" }}><div style={{ fontSize: 12, color: "#6b7a60", textTransform: "uppercase" }}>Type</div><div style={{ fontSize: 20, fontWeight: 700, color: "#86c26c" }}>Outdoor</div></div>
                   </div>
                   <div style={{ height: 1, background: "rgba(134,194,108,0.15)", margin: "0 0 16px" }} />
-                  <div style={{ fontSize: 13, color: "#8a9a7e", lineHeight: 1.5 }}>🌿 Perfect conditions for a {duration}-minute walk. {selectedSlot.weather.temp < 60 ? "Consider a light jacket." : "Enjoy the warmth!"} Remember to hydrate.</div>
+                  <div style={{ fontSize: 13, color: "#8a9a7e", lineHeight: 1.5 }}>🌿 Perfect conditions. {selectedSlot.weather.temp < 60 ? "Consider a light jacket." : "Enjoy the warmth!"} Remember to hydrate.</div>
                 </div>
-
                 <div style={{ background: "rgba(255,160,60,0.06)", border: "1px solid rgba(255,160,60,0.12)", borderRadius: 12, padding: "12px 16px", marginBottom: 20, display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 28 }}>🔥</span>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#ffa03c" }}>Keep your {streak}-day streak alive!</div>
-                    <div style={{ fontSize: 12, color: "#a08050" }}>Complete this walk to extend your streak to {streak + 1} days</div>
-                  </div>
+                  <span style={{ fontSize: 28 }}>🔥</span><div><div style={{ fontSize: 14, fontWeight: 700, color: "#ffa03c" }}>Keep your {streak}-day streak alive!</div><div style={{ fontSize: 12, color: "#a08050" }}>Complete this walk to extend to {streak + 1} days</div></div>
                 </div>
-
                 {todayLogged ? (
                   <div style={{ background: "rgba(134,194,108,0.1)", border: "1px solid rgba(134,194,108,0.3)", borderRadius: 16, padding: 20, textAlign: "center" }}>
-                    <div style={{ fontSize: 36, marginBottom: 8 }}>✅</div>
-                    <div style={{ fontSize: 17, fontWeight: 700, color: "#86c26c", marginBottom: 4 }}>Already Logged Today!</div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: "#ffa03c", marginTop: 10 }}>🔥 Streak: {streak} days!</div>
+                    <div style={{ fontSize: 36, marginBottom: 8 }}>✅</div><div style={{ fontSize: 17, fontWeight: 700, color: "#86c26c" }}>Already Logged Today!</div><div style={{ fontSize: 14, fontWeight: 600, color: "#ffa03c", marginTop: 10 }}>🔥 Streak: {streak} days!</div>
                   </div>
                 ) : (
                   <div>
-                    {/* Schedule to calendar — does NOT log the walk */}
-                    <button onClick={function() { scheduleWalkToCalendar(selectedSlot); }} style={{ width: "100%", padding: "18px 0", borderRadius: 16, border: "none", background: walkScheduled ? "rgba(134,194,108,0.15)" : "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)", color: walkScheduled ? "#86c26c" : "#0a160a", fontSize: 17, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", letterSpacing: 0.5, boxShadow: walkScheduled ? "none" : "0 4px 24px rgba(134,194,108,0.3)", marginBottom: 10 }}>
+                    <button onClick={function() { scheduleWalkToCalendar(selectedSlot); }} style={{ width: "100%", padding: "18px 0", borderRadius: 16, border: "none", background: walkScheduled ? "rgba(134,194,108,0.15)" : "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)", color: walkScheduled ? "#86c26c" : "#0a160a", fontSize: 17, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", boxShadow: walkScheduled ? "none" : "0 4px 24px rgba(134,194,108,0.3)", marginBottom: 10 }}>
                       {walkScheduled ? "✅ Scheduled — Added to Calendar" : "📅 Schedule Walk (Add to Calendar)"}
                     </button>
-
-                    {/* Confirm you actually did it */}
-                    <button onClick={function() { logActivity("walk"); setScreen("checkin_done"); }} style={{ width: "100%", padding: "16px 0", borderRadius: 14, cursor: "pointer", background: "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)", border: "none", color: "#0a160a", fontSize: 15, fontWeight: 700, fontFamily: "inherit", boxShadow: "0 2px 16px rgba(134,194,108,0.2)" }}>
-                      ✅ I Did This Walk — Log It
-                    </button>
-
-                    <div style={{ fontSize: 11, color: "#5a6a50", textAlign: "center", marginTop: 10, lineHeight: 1.4 }}>
-                      Scheduling adds it to your calendar. Logging confirms you actually did it and updates your streak.
-                    </div>
+                    <button onClick={function() { logActivity("walk"); setScreen("checkin_done"); }} style={{ width: "100%", padding: "16px 0", borderRadius: 14, cursor: "pointer", background: "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)", border: "none", color: "#0a160a", fontSize: 15, fontWeight: 700, fontFamily: "inherit" }}>✅ I Did This Walk — Log It</button>
+                    <div style={{ fontSize: 11, color: "#5a6a50", textAlign: "center", marginTop: 10 }}>Scheduling adds to calendar. Logging confirms you did it.</div>
                   </div>
                 )}
-
                 <div style={{ marginTop: 24, background: "rgba(194,168,108,0.08)", border: "1px solid rgba(194,168,108,0.15)", borderRadius: 16, padding: 18 }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: "#c2a86c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>🧬 Longevity Tip</div>
-                  <div style={{ fontSize: 13.5, lineHeight: 1.55, color: "#d4c9a8" }}>Walking outdoors in natural light helps regulate your circadian rhythm, which governs everything from hormone production to cellular repair.</div>
+                  <div style={{ fontSize: 13.5, lineHeight: 1.55, color: "#d4c9a8" }}>Walking outdoors in natural light helps regulate your circadian rhythm, which governs hormone production and cellular repair.</div>
                 </div>
               </div>
             )}
@@ -748,19 +786,18 @@
             {/* INDOOR */}
             {screen === "indoor" && (
               <div style={{ padding: "56px 24px 24px" }}>
-                <button onClick={function() { setScreen("home"); }} style={{ background: "none", border: "none", color: "#86c26c", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 0, marginBottom: 24 }}>← Back</button>
+                <button onClick={function() { setScreen("home"); }} style={backBtn}>← Back</button>
                 <div style={{ textAlign: "center", padding: "20px 0 28px" }}>
                   <div style={{ fontSize: 12, letterSpacing: 2.5, textTransform: "uppercase", color: "#c2946c", fontWeight: 600, marginBottom: 12 }}>🌧️ Stay Active Indoors</div>
                   <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 28, fontWeight: 700, margin: 0, color: "#f0f7ec" }}>Indoor Activity</h2>
                 </div>
                 <div style={{ background: "rgba(255,160,60,0.06)", border: "1px solid rgba(255,160,60,0.12)", borderRadius: 12, padding: "12px 16px", marginBottom: 20, display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 28 }}>🔥</span>
-                  <div><div style={{ fontSize: 14, fontWeight: 700, color: "#ffa03c" }}>Indoor days count too!</div><div style={{ fontSize: 12, color: "#a08050" }}>Complete this to keep your {streak}-day streak going</div></div>
+                  <span style={{ fontSize: 28 }}>🔥</span><div><div style={{ fontSize: 14, fontWeight: 700, color: "#ffa03c" }}>Indoor days count too!</div><div style={{ fontSize: 12, color: "#a08050" }}>Keep your {streak}-day streak going</div></div>
                 </div>
                 <div style={{ background: "linear-gradient(135deg, rgba(194,140,108,0.1) 0%, rgba(194,140,108,0.03) 100%)", border: "1px solid rgba(194,140,108,0.2)", borderRadius: 24, padding: 28, textAlign: "center", marginBottom: 20 }}>
                   <div style={{ fontSize: 52, marginBottom: 12 }}>{indoorActivity.icon}</div>
                   <div style={{ fontSize: 22, fontWeight: 700, color: "#e8efe4", marginBottom: 6, fontFamily: "'Playfair Display', serif" }}>{indoorActivity.name}</div>
-                  <div style={{ display: "inline-block", fontSize: 12, fontWeight: 600, padding: "4px 12px", borderRadius: 8, background: "rgba(194,140,108,0.15)", color: "#c2946c" }}>~{indoorActivity.duration} · No equipment needed</div>
+                  <div style={{ display: "inline-block", fontSize: 12, fontWeight: 600, padding: "4px 12px", borderRadius: 8, background: "rgba(194,140,108,0.15)", color: "#c2946c" }}>~{indoorActivity.duration} · No equipment</div>
                   <div style={{ marginTop: 16, padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", textAlign: "left" }}>
                     <div style={{ fontSize: 11, fontWeight: 600, color: "#c2946c", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6 }}>How To Do It</div>
                     <div style={{ fontSize: 13.5, lineHeight: 1.6, color: "#b0bca4" }}>{indoorActivity.howTo}</div>
@@ -771,7 +808,7 @@
                   <div style={{ fontSize: 13.5, lineHeight: 1.6, color: "#d4c9a8" }}>{indoorActivity.tip}</div>
                 </div>
                 <button onClick={function() { setIndoorActivity(getRandomActivity()); }} style={{ width: "100%", padding: "16px 0", borderRadius: 14, cursor: "pointer", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#e8efe4", fontSize: 15, fontWeight: 600, fontFamily: "inherit", marginBottom: 10 }}>🔄 Give Me a Different Activity</button>
-                <button onClick={function() { logActivity("indoor"); setScreen("indoor_done"); }} style={{ width: "100%", padding: "16px 0", borderRadius: 14, cursor: "pointer", background: "linear-gradient(135deg, #c2946c 0%, #a87d52 100%)", border: "none", color: "#1a1008", fontSize: 15, fontWeight: 700, fontFamily: "inherit", boxShadow: "0 4px 20px rgba(194,140,108,0.25)" }}>✅ I Did This — Log It</button>
+                <button onClick={function() { logActivity("indoor"); setScreen("indoor_done"); }} style={{ width: "100%", padding: "16px 0", borderRadius: 14, cursor: "pointer", background: "linear-gradient(135deg, #c2946c 0%, #a87d52 100%)", border: "none", color: "#1a1008", fontSize: 15, fontWeight: 700, fontFamily: "inherit" }}>✅ I Did This — Log It</button>
               </div>
             )}
 
@@ -808,7 +845,7 @@
                   <div style={{ fontSize: 11, fontWeight: 600, color: "#86c26c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>Weekly Total</div>
                   <div style={{ fontSize: 24, fontWeight: 700, color: "#e8efe4", fontFamily: "'Playfair Display', serif" }}>{weeklyMins} minutes</div>
                   {currentMilestone && <div style={{ fontSize: 13, color: "#a8c89a", marginTop: 4 }}>✅ {currentMilestone.label}</div>}
-                  {nextMilestone && <div style={{ fontSize: 12, color: "#6b7a60", marginTop: 6 }}>Next: {nextMilestone.mins} min — {nextMilestone.mins - weeklyMins} min to go</div>}
+                  {nextMilestone && <div style={{ fontSize: 12, color: "#6b7a60", marginTop: 6 }}>Next: {nextMilestone.mins} min — {nextMilestone.mins - weeklyMins} to go</div>}
                 </div>
                 <button onClick={function() { setScreen("home"); }} style={{ width: "100%", padding: "16px 0", borderRadius: 14, cursor: "pointer", background: "linear-gradient(135deg, #86c26c 0%, #6ba352 100%)", border: "none", color: "#0a160a", fontSize: 15, fontWeight: 700, fontFamily: "inherit" }}>← Back to Home</button>
               </div>
@@ -823,8 +860,7 @@
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {weeklyWeather.map(function(w, idx) {
-                    var isToday = idx === 0;
-                    var logged = weekLog[(todayIdx + idx) % 7];
+                    var isToday = idx === 0; var logged = weekLog[(todayIdx + idx) % 7];
                     return (
                       <div key={idx} style={{ background: isToday ? "rgba(134,194,108,0.08)" : "rgba(255,255,255,0.03)", border: isToday ? "1px solid rgba(134,194,108,0.25)" : "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: "16px 18px" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -832,9 +868,7 @@
                             <div style={{ textAlign: "center", minWidth: 44 }}><div style={{ fontSize: 24 }}>{w.icon}</div><div style={{ fontSize: 11, color: "#6b7a60", marginTop: 2 }}>{w.high}°/{w.low}°</div></div>
                             <div><div style={{ fontSize: 15, fontWeight: 600, color: "#e8efe4" }}>{isToday ? "Today" : FULL_DAYS[(todayIdx + idx) % 7]}</div><div style={{ fontSize: 12, color: "#8a9a7e" }}>{w.condition}</div></div>
                           </div>
-                          <div>
-                            {logged ? <div style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, background: "rgba(134,194,108,0.2)", color: "#86c26c" }}>✓ Done</div> : w.good ? <div style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, background: "rgba(134,194,108,0.1)", color: "#86c26c" }}>🚶 Walk</div> : <div style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, background: "rgba(194,140,108,0.1)", color: "#c2946c" }}>🏠 Indoor</div>}
-                          </div>
+                          {logged ? <div style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, background: "rgba(134,194,108,0.2)", color: "#86c26c" }}>✓ Done</div> : w.good ? <div style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, background: "rgba(134,194,108,0.1)", color: "#86c26c" }}>🚶 Walk</div> : <div style={{ fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, background: "rgba(194,140,108,0.1)", color: "#c2946c" }}>🏠 Indoor</div>}
                         </div>
                       </div>
                     );
@@ -842,7 +876,7 @@
                 </div>
                 <div style={{ marginTop: 20, background: "rgba(134,194,108,0.06)", border: "1px solid rgba(134,194,108,0.15)", borderRadius: 16, padding: 18, textAlign: "center" }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: "#86c26c", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>Week at a Glance</div>
-                  <div style={{ fontSize: 14, color: "#a8c89a" }}>{weeklyWeather.filter(function(w) { return w.good; }).length} outdoor days · {weeklyWeather.filter(function(w) { return !w.good; }).length} indoor days</div>
+                  <div style={{ fontSize: 14, color: "#a8c89a" }}>{weeklyWeather.filter(function(w) { return w.good; }).length} outdoor · {weeklyWeather.filter(function(w) { return !w.good; }).length} indoor days</div>
                 </div>
               </div>
             )}
@@ -851,12 +885,10 @@
           {/* BOTTOM NAV */}
           <div style={{ position: "fixed", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 390, padding: "12px 24px 28px", background: "linear-gradient(to top, #0a160a 60%, transparent)", display: "flex", justifyContent: "space-around", zIndex: 50 }}>
             {[{ icon: "🏠", label: "Today", s: "home" }, { icon: "📅", label: "Week", s: "week" }, { icon: "🏃", label: "Indoor", s: "indoor" }].map(function(item, i) {
-              return (
-                <button key={i} onClick={function() { if (item.s === "indoor") setIndoorActivity(getRandomActivity()); setScreen(item.s); setShowProfile(false); }} style={{ background: "none", border: "none", cursor: "pointer", textAlign: "center", padding: "6px 16px" }}>
-                  <div style={{ fontSize: 22, marginBottom: 2 }}>{item.icon}</div>
-                  <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.5, color: (screen === item.s || (item.s === "home" && (screen === "detail" || screen === "indoor_done" || screen === "checkin_done"))) ? "#86c26c" : "#4a5a40" }}>{item.label}</div>
-                </button>
-              );
+              return (<button key={i} onClick={function() { if (item.s === "indoor") setIndoorActivity(getRandomActivity()); setScreen(item.s); setShowProfile(false); }} style={{ background: "none", border: "none", cursor: "pointer", textAlign: "center", padding: "6px 16px" }}>
+                <div style={{ fontSize: 22, marginBottom: 2 }}>{item.icon}</div>
+                <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.5, color: (screen === item.s || (item.s === "home" && (screen === "detail" || screen === "indoor_done" || screen === "checkin_done"))) ? "#86c26c" : "#4a5a40" }}>{item.label}</div>
+              </button>);
             })}
           </div>
 
@@ -884,7 +916,7 @@
       }, []);
 
       if (loading) return (
-        <div style={{ maxWidth: 390, margin: "0 auto", minHeight: "100vh", background: "linear-gradient(170deg, #1a2e1a 0%, #0f1f0f 40%, #0a160a 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Instrument Sans', system-ui, sans-serif" }}>
+        <div style={{...pageWrap, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ textAlign: "center" }}><div style={{ fontSize: 48, marginBottom: 16 }}>🚶‍♀️</div><div style={{ color: "#86c26c", fontSize: 16, fontWeight: 600 }}>Loading...</div></div>
         </div>
       );
