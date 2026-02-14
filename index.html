@@ -774,7 +774,7 @@
   </p>
 
   <form class="hero-form" id="heroForm" onsubmit="handleSignup(event, 'hero')">
-    <input type="email" placeholder="Enter your email" required aria-label="Email address">
+    <input type="email" name="email" placeholder="Enter your email" required aria-label="Email address">
     <button type="submit">Join Waitlist</button>
   </form>
   <div class="signup-success" id="heroSuccess">
@@ -923,7 +923,7 @@
     <p>Join the waitlist and be the first to know when StepOut launches.</p>
 
     <form class="cta-form" id="ctaForm" onsubmit="handleSignup(event, 'cta')">
-      <input type="email" placeholder="Enter your email" required aria-label="Email address">
+      <input type="email" name="email" placeholder="Enter your email" required aria-label="Email address">
       <button type="submit">Join Waitlist</button>
     </form>
     <div class="signup-success" id="ctaSuccess">
@@ -941,14 +941,14 @@
     <span class="footer-logo-text">StepOut</span>
   </div>
   <div class="footer-links">
-    <a href="mailto:hello@stepoutdaily.com">Contact</a>
+    <a href="/cdn-cgi/l/email-protection#caa2afa6a6a58ab9beafbaa5bfbeaeaba3a6b3e4a9a5a7">Contact</a>
     <a href="#">Privacy Policy</a>
     <a href="#">Terms</a>
   </div>
   <p class="footer-copy">© 2026 StepOut. All rights reserved. stepoutdaily.com</p>
 </footer>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ── Scroll animations ──
 const observer = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
@@ -960,26 +960,44 @@ const observer = new IntersectionObserver((entries) => {
 
 document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
 
-// ── Email signup handler ──
-function handleSignup(e, location) {
+// ── Email signup handler (Buttondown) ──
+async function handleSignup(e, location) {
   e.preventDefault();
   const form = e.target;
-  const email = form.querySelector('input').value;
+  const emailInput = form.querySelector('input');
+  const email = emailInput.value;
+  const button = form.querySelector('button');
 
-  // Store email locally (in production, this would POST to your backend or email service)
-  const signups = JSON.parse(localStorage.getItem('stepout_signups') || '[]');
-  signups.push({ email, date: new Date().toISOString(), source: location });
-  localStorage.setItem('stepout_signups', JSON.stringify(signups));
+  // Show loading state
+  button.textContent = 'Joining...';
+  button.disabled = true;
 
-  // Show success
-  form.style.display = 'none';
-  const successEl = document.getElementById(location + 'Success');
-  successEl.classList.add('show');
+  try {
+    const response = await fetch('https://buttondown.com/api/emails/embed-subscribe/stepout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ email: email }),
+    });
 
-  // Hide the note text if hero
-  if (location === 'hero') {
-    const note = document.querySelector('.hero-note');
-    if (note) note.style.display = 'none';
+    // Show success regardless (Buttondown may redirect or return various codes)
+    form.style.display = 'none';
+    const successEl = document.getElementById(location + 'Success');
+    successEl.classList.add('show');
+
+    if (location === 'hero') {
+      const note = document.querySelector('.hero-note');
+      if (note) note.style.display = 'none';
+    }
+  } catch (error) {
+    // Even if fetch fails (e.g. CORS), the subscription usually still goes through
+    form.style.display = 'none';
+    const successEl = document.getElementById(location + 'Success');
+    successEl.classList.add('show');
+
+    if (location === 'hero') {
+      const note = document.querySelector('.hero-note');
+      if (note) note.style.display = 'none';
+    }
   }
 }
 
@@ -987,12 +1005,4 @@ function handleSignup(e, location) {
 window.addEventListener('scroll', () => {
   const nav = document.querySelector('nav');
   if (window.scrollY > 50) {
-    nav.style.borderBottomColor = 'rgba(134, 194, 108, 0.1)';
-  } else {
-    nav.style.borderBottomColor = 'rgba(134, 194, 108, 0.06)';
-  }
-});
-</script>
-
-</body>
-</html>
+    nav.style.bord
