@@ -826,6 +826,11 @@
   <p class="footer-copy">&copy; 2026 StepOut. All rights reserved. stepoutdaily.com</p>
 </footer>
 
+<iframe name="bd-iframe" style="display:none;"></iframe>
+<form id="hiddenBDForm" action="https://buttondown.com/api/emails/embed-subscribe/stepout" method="post" target="bd-iframe" style="display:none;">
+  <input type="email" name="email" id="hiddenBDEmail">
+</form>
+
 <script>
 // Scroll animations
 var observer = new IntersectionObserver(function(entries) {
@@ -840,7 +845,7 @@ document.querySelectorAll('.fade-in').forEach(function(el) {
   observer.observe(el);
 });
 
-// Email signup — no forms, no iframes, just a direct XMLHttpRequest
+// Email signup — uses a hidden form to POST to Buttondown (avoids CORS)
 function submitToButtondown(emailInputId, formUIId, successId, noteId) {
   var emailInput = document.getElementById(emailInputId);
   var email = emailInput.value.trim();
@@ -851,34 +856,25 @@ function submitToButtondown(emailInputId, formUIId, successId, noteId) {
     return;
   }
 
+  // Show loading state
   var btn = document.getElementById(formUIId).querySelector('button');
   btn.textContent = 'Joining...';
   btn.disabled = true;
   btn.style.opacity = '0.7';
 
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', 'https://buttondown.com/api/emails/embed-subscribe/stepout', true);
-  xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+  // Submit via hidden form (this actually sends the data to Buttondown)
+  document.getElementById('hiddenBDEmail').value = email;
+  document.getElementById('hiddenBDForm').submit();
 
-  xhr.onload = function() {
-    showSuccess(formUIId, successId, noteId);
-  };
-
-  xhr.onerror = function() {
-    // Even on error, the subscription often goes through
-    showSuccess(formUIId, successId, noteId);
-  };
-
-  xhr.send('email=' + encodeURIComponent(email));
-}
-
-function showSuccess(formUIId, successId, noteId) {
-  document.getElementById(formUIId).style.display = 'none';
-  document.getElementById(successId).style.display = 'block';
-  if (noteId) {
-    var note = document.getElementById(noteId);
-    if (note) note.style.display = 'none';
-  }
+  // Show success message after a short delay
+  setTimeout(function() {
+    document.getElementById(formUIId).style.display = 'none';
+    document.getElementById(successId).style.display = 'block';
+    if (noteId) {
+      var note = document.getElementById(noteId);
+      if (note) note.style.display = 'none';
+    }
+  }, 1200);
 }
 
 // Button click handlers
@@ -890,7 +886,7 @@ document.getElementById('ctaBtn').addEventListener('click', function() {
   submitToButtondown('ctaEmail', 'ctaFormUI', 'ctaSuccess', null);
 });
 
-// Also handle Enter key in email fields
+// Handle Enter key in email fields
 document.getElementById('heroEmail').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') {
     e.preventDefault();
